@@ -1,1 +1,0 @@
-# NASA-SpaceAppsChallenge2026
