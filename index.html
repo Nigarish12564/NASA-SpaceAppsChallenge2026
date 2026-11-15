@@ -1,0 +1,2718 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Earth Analog Finder | Moon & Mars Planetary Exploration Dashboard</title>
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="favicon.jpg" />
+  <link rel="apple-touch-icon" href="favicon.jpg" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cosmic: '#05070D',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --color-accent: #7fdfff;
+      --color-accent-rgb: 127, 223, 255;
+      --color-accent-soft: rgba(127, 223, 255, 0.14);
+      --color-accent-glow: rgba(127, 223, 255, 0.55);
+      --color-border: rgba(127, 223, 255, 0.25);
+      --color-surface: rgba(10, 16, 28, 0.76);
+      --color-surface-strong: rgba(7, 12, 22, 0.94);
+      --color-bg-base: #05070D;
+      --color-text-main: #E8EEFC;
+      --color-text-muted: rgba(200, 222, 245, 0.65);
+      --color-grid: rgba(127, 223, 255, 0.08);
+      --color-secondary: #38bdf8;
+    }
+
+    .theme-mars {
+      /* Keep the iconic Martian red as requested! */
+      --color-accent: #ff4732;
+      --color-accent-rgb: 255, 71, 50;
+      --color-accent-soft: rgba(255, 71, 50, 0.16);
+      --color-accent-glow: rgba(255, 71, 50, 0.55);
+
+      /* Atmospheric Martian landscape colors: solar amber ochre, warm basalt, copper borders */
+      --color-secondary: #f59e0b;
+      --color-border: rgba(255, 95, 70, 0.32);
+      --color-surface: rgba(26, 16, 17, 0.85);
+      --color-surface-strong: rgba(18, 10, 11, 0.96);
+      --color-bg-base: #090405;
+      --color-text-main: #feece8;
+      --color-text-muted: rgba(245, 195, 185, 0.7);
+      --color-grid: rgba(255, 95, 70, 0.08);
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background-color: var(--color-bg-base);
+      color: var(--color-text-main);
+      overflow-x: hidden;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Custom futuristic scrollbar */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--color-bg-base);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(var(--color-accent-rgb), 0.35);
+      border-radius: 999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(var(--color-accent-rgb), 0.65);
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(18px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .animate-modal-in {
+      animation: modalIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .radar-polygon {
+      transition: all 0.5s ease-out;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ========================================================= -->
+  <!-- 1. TOP MISSION HUD HEADER -->
+  <!-- ========================================================= -->
+  <header class="fixed top-0 inset-x-0 z-50 backdrop-blur-xl transition-all duration-300"
+    style="background: var(--color-surface-strong); border-bottom: 1px solid var(--color-border);">
+    <div class="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16">
+      <!-- Logo & Branding -->
+      <a href="#overview" onclick="switchPage('overview'); return false;" class="flex items-center gap-3 group">
+        <div
+          class="relative flex items-center justify-center w-10 h-10 rounded-xl transition-transform duration-500 group-hover:scale-105"
+          style="border: 1px solid var(--color-border); background: var(--color-accent-soft);">
+          <svg class="w-5 h-5 transition-transform duration-700 group-hover:rotate-180"
+            style="color: var(--color-accent);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <circle cx="12" cy="12" r="3" stroke-width="2" />
+            <path stroke-width="2" d="M3 12a9 9 0 1018 0 9 9 0 00-18 0z" />
+            <path stroke-width="2" d="M12 3a9 9 0 010 18M12 3a9 9 0 000 18" />
+          </svg>
+          <span class="absolute inset-0 rounded-xl blur-md -z-10"
+            style="background: var(--color-accent-glow); opacity: 0.5;"></span>
+        </div>
+        <div class="leading-tight">
+          <div class="text-[15px] font-extrabold tracking-wide text-white flex items-center gap-2">
+            Earth Analog Finder
+            <span id="active-mode-badge"
+              class="text-[9px] uppercase px-2 py-0.5 rounded-full font-mono font-bold tracking-wider"
+              style="background: var(--color-accent-soft); color: var(--color-accent); border: 1px solid var(--color-border);">
+              Lunar Artemis
+            </span>
+          </div>
+          <div class="text-[10px] uppercase tracking-[0.2em] text-white/40">
+            NASA Space Apps Challenge 2026
+          </div>
+        </div>
+      </a>
+
+      <!-- Desktop Nav Links (Pages) -->
+      <nav id="desktop-nav" class="hidden xl:flex items-center gap-1 text-xs font-medium text-white/70">
+        <button onclick="switchPage('overview')" id="nav-tab-overview"
+          class="nav-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <circle cx="12" cy="12" r="3" stroke-width="2" />
+            <path stroke-width="2" d="M3 12a9 9 0 1018 0 9 9 0 00-18 0z" />
+          </svg>
+          <span>Overview</span>
+        </button>
+        <button onclick="switchPage('globe')" id="nav-tab-globe"
+          class="nav-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" stroke-width="2" />
+            <path stroke-width="2"
+              d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+          </svg>
+          <span>3D Globe</span>
+        </button>
+        <button onclick="switchPage('pakistan')" id="nav-tab-pakistan"
+          class="nav-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span>Pakistan (15)</span>
+        </button>
+        <button onclick="switchPage('global')" id="nav-tab-global"
+          class="nav-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" stroke-width="2" />
+            <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9" stroke-width="2" />
+          </svg>
+          <span>Global (20)</span>
+        </button>
+        <button onclick="switchPage('compare')" id="nav-tab-compare"
+          class="nav-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all">
+          <span>Radar Compare</span>
+        </button>
+        <button onclick="switchPage('weights')" id="nav-tab-weights"
+          class="nav-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all">
+          <span>PASM Weights</span>
+        </button>
+        <button onclick="switchPage('data')" id="nav-tab-data"
+          class="nav-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all">
+          <span>Telemetry Matrix</span>
+        </button>
+        <button onclick="switchPage('science')" id="nav-tab-science"
+          class="nav-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all">
+          <span>Methodology</span>
+        </button>
+      </nav>
+
+      <!-- Planetary Mode Toggle -->
+      <div class="flex items-center gap-1 p-1 rounded-xl bg-black/40" style="border: 1px solid var(--color-border);">
+        <button id="btn-mode-moon" onclick="setPlanetaryMode('moon')"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300">
+          <span>⚪ Moon (Artemis)</span>
+        </button>
+        <button id="btn-mode-mars" onclick="setPlanetaryMode('mars')"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300">
+          <span>🔴 Mars (Global)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Subnav -->
+    <div
+      class="flex xl:hidden items-center gap-2 px-4 py-2 overflow-x-auto no-scrollbar text-xs text-white/70 border-t border-white/5 bg-black/60">
+      <button onclick="switchPage('overview')" id="mob-nav-overview"
+        class="mob-tab-btn px-2.5 py-1 whitespace-nowrap rounded">Overview</button>
+      <button onclick="switchPage('globe')" id="mob-nav-globe"
+        class="mob-tab-btn px-2.5 py-1 whitespace-nowrap rounded">3D Globe</button>
+      <button onclick="switchPage('pakistan')" id="mob-nav-pakistan"
+        class="mob-tab-btn px-2.5 py-1 whitespace-nowrap rounded">Pakistan (15)</button>
+      <button onclick="switchPage('global')" id="mob-nav-global"
+        class="mob-tab-btn px-2.5 py-1 whitespace-nowrap rounded">Global (20)</button>
+      <button onclick="switchPage('compare')" id="mob-nav-compare"
+        class="mob-tab-btn px-2.5 py-1 whitespace-nowrap rounded">Compare</button>
+      <button onclick="switchPage('weights')" id="mob-nav-weights"
+        class="mob-tab-btn px-2.5 py-1 whitespace-nowrap rounded">Weights</button>
+      <button onclick="switchPage('data')" id="mob-nav-data"
+        class="mob-tab-btn px-2.5 py-1 whitespace-nowrap rounded">Dataset</button>
+      <button onclick="switchPage('science')" id="mob-nav-science"
+        class="mob-tab-btn px-2.5 py-1 whitespace-nowrap rounded">Methodology</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ========================================================= -->
+    <!-- 2. HERO ORBITALS 3D SECTION (OVERVIEW PAGE) -->
+    <!-- ========================================================= -->
+    <div id="overview-page" class="page-view">
+      <section id="hero-section" class="relative w-full min-h-screen flex items-center overflow-hidden pt-16">
+        <!-- 2D Canvas Starfield -->
+        <canvas id="starfield-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+
+        <!-- Background Glow Gradients -->
+        <div id="hero-glow-overlay" class="absolute inset-0 pointer-events-none transition-all duration-700"
+          style="background: radial-gradient(ellipse at 75% 45%, rgba(127,223,255,0.18), transparent 65%), radial-gradient(ellipse at 20% 80%, rgba(20,50,90,0.2), transparent 60%);">
+        </div>
+
+        <!-- 3D Three.js Solar System Canvas -->
+        <div id="hero-orbitals-container" class="absolute inset-0 z-0"></div>
+
+        <!-- Hero Overlay Content -->
+        <div
+          class="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-12 flex flex-col justify-between min-h-[calc(100vh-4rem)]">
+          <!-- Top Badges -->
+          <div class="flex flex-wrap items-center gap-2.5 pt-4">
+            <span
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider font-mono"
+              style="background: var(--color-accent-soft); color: var(--color-accent); border: 1px solid var(--color-border);">
+              ✦ NASA Space Apps Challenge 2026
+            </span>
+            <span
+              class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-medium text-white/70 bg-white/5 border border-white/10 font-mono">
+              NASA POWER 30-Yr Climatology
+            </span>
+            <span
+              class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-medium text-white/70 bg-white/5 border border-white/10 font-mono">
+              ASTER 30m Global DEM
+            </span>
+          </div>
+
+          <!-- Main Hero Copy -->
+          <div class="max-w-2xl my-auto py-8">
+            <div id="hero-pasm-tag" class="text-[11px] uppercase tracking-[0.3em] font-mono font-bold mb-3"
+              style="color: var(--color-accent);">
+              Planetary Analog Similarity Model (PASM)
+            </div>
+
+            <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.08] mb-8">
+              Earth's most alien landscapes, mapped for <span id="hero-title-accent"
+                class="text-transparent bg-clip-text"
+                style="background-image: linear-gradient(135deg, #ffffff 30%, var(--color-accent) 100%);">off-world
+                science.</span>
+            </h1>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap items-center gap-4">
+              <button onclick="switchPage('globe')"
+                class="flex items-center gap-2 px-6 py-3.5 rounded-xl font-bold text-sm transition-all duration-300 hover:scale-[1.03]"
+                style="background: var(--color-accent); color: #05070D; box-shadow: 0 0 24px -4px var(--color-accent-glow);">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10" stroke-width="2" />
+                  <path stroke-width="2"
+                    d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+                </svg>
+                <span>Launch 3D Globe Explorer</span>
+              </button>
+
+              <button onclick="switchPage('pakistan')"
+                class="flex items-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-sm text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/40 transition-all duration-300">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10" stroke-width="2" />
+                  <polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9" stroke-width="2" />
+                </svg>
+                <span>15 Pakistan Analogs</span>
+              </button>
+
+              <button onclick="switchPage('compare')"
+                class="flex items-center gap-1.5 px-4 py-3.5 rounded-xl font-medium text-sm text-white/70 hover:text-white transition-colors">
+                <span>Radar Comparison &rarr;</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Live KPI Metrics Ribbon -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-white/10">
+            <div class="rounded-xl p-3.5 backdrop-blur-md"
+              style="background: var(--color-surface); border: 1px solid var(--color-border);">
+              <div class="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-0.5 font-mono">Total Catalog</div>
+              <div class="text-2xl font-black text-white font-mono">35 Sites</div>
+              <div class="text-[11px] text-white/40">NASA POWER Verified</div>
+            </div>
+
+            <div class="rounded-xl p-3.5 backdrop-blur-md"
+              style="background: var(--color-surface); border: 1px solid var(--color-border);">
+              <div class="text-[10px] uppercase tracking-[0.2em] text-emerald-400 mb-0.5 font-mono">Pakistan Focus</div>
+              <div class="text-2xl font-black text-emerald-400 font-mono">15 Sites</div>
+              <div class="text-[11px] text-white/40">Balochistan • Sindh • GB</div>
+            </div>
+
+            <div class="rounded-xl p-3.5 backdrop-blur-md"
+              style="background: var(--color-surface); border: 1px solid var(--color-border);">
+              <div class="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-0.5 font-mono">Best in Pakistan</div>
+              <div id="kpi-best-pk" class="text-lg font-bold text-white truncate">—</div>
+              <div id="kpi-best-pk-score" class="text-[11px] font-mono font-bold" style="color: var(--color-accent);">—%
+                Match</div>
+            </div>
+
+            <div class="rounded-xl p-3.5 backdrop-blur-md"
+              style="background: var(--color-surface); border: 1px solid var(--color-border);">
+              <div class="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-0.5 font-mono">Best Global Benchmark
+              </div>
+              <div id="kpi-best-intl" class="text-lg font-bold text-white truncate">—</div>
+              <div id="kpi-best-intl-score" class="text-[11px] font-mono font-bold" style="color: var(--color-accent);">
+                —% Match</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ========================================================= -->
+      <!-- 3. INTERACTIVE 3D WEBGL EARTH GLOBE EXPLORER (FLOATING) -->
+      <!-- ========================================================= -->
+      <section id="globe-section"
+        class="relative w-full min-h-screen overflow-hidden py-16 flex flex-col items-center justify-center"
+        style="background-image: radial-gradient(ellipse at 50% 50%, rgba(15,25,50,0.5), #05070D 80%);">
+        <!-- Floating Header & Minimal Filter Controls -->
+        <div class="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-4">
+          <div class="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] font-mono font-bold mb-2"
+            style="color: var(--color-accent);">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <circle cx="12" cy="12" r="10" stroke-width="2" />
+              <path stroke-width="2"
+                d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+            </svg>
+            3D Planetary Analog Globe Explorer
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
+            Global Planetary Analog Globe
+          </h2>
+          <p class="text-xs sm:text-sm text-white/60 max-w-lg mx-auto mb-6">
+            Rotate the floating Earth sphere. Click any pulsing location pin to zoom in and inspect its complete
+            planetary analog dossier.
+          </p>
+
+          <!-- Floating Scope Selector -->
+          <div
+            class="inline-flex items-center gap-1.5 p-1 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 text-xs shadow-2xl">
+            <button id="scope-btn-all" onclick="setGlobeRegionFilter('all')"
+              class="px-4 py-2 rounded-xl font-bold bg-white/15 text-white transition-all">All 35 Sites</button>
+            <button id="scope-btn-pk" onclick="setGlobeRegionFilter('pakistan')"
+              class="px-4 py-2 rounded-xl font-medium text-white/60 hover:text-emerald-400 transition-all flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Pakistan (15)
+            </button>
+            <button id="scope-btn-intl" onclick="setGlobeRegionFilter('international')"
+              class="px-4 py-2 rounded-xl font-medium text-white/60 hover:text-white transition-all">International
+              (20)</button>
+          </div>
+        </div>
+
+        <!-- Completely Unconfined, Floating 3D Earth Globe Container -->
+        <div class="relative z-10 w-full max-w-5xl h-[620px] sm:h-[720px] mx-auto flex items-center justify-center">
+          <!-- Floating canvas without borders, boxes, or corner brackets -->
+          <div id="globe-3d-canvas-container"
+            class="w-full h-full cursor-grab active:cursor-grabbing flex items-center justify-center"></div>
+
+          <!-- Subtle Floating Bottom Hint -->
+          <div class="absolute bottom-4 inset-x-0 text-center pointer-events-none">
+            <span
+              class="text-[11px] uppercase tracking-[0.2em] font-mono text-white/40 bg-black/50 px-4 py-1.5 rounded-full backdrop-blur-md border border-white/10">
+              Drag to rotate sphere &bull; Click pin to zoom in
+            </span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- 4. PAKISTAN ANALOG CANDIDATE EXPLORER (PAGE) -->
+    <!-- ========================================================= -->
+    <section id="pakistan-section"
+      class="page-view hidden min-h-[calc(100vh-4rem)] pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <div class="text-[11px] uppercase tracking-[0.25em] font-mono font-bold mb-1 text-emerald-400">
+            Pakistan Planetary Exploration Zone
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+            15 Promising Analog Sites in Pakistan
+          </h2>
+          <p class="text-sm text-white/65 mt-1 max-w-2xl leading-relaxed">
+            From the high-altitude permafrost of Deosai to the hydrothermal solfataras of Chagai and methane-venting mud
+            volcanoes of Hingol, Pakistan hosts premier terrestrial environments for off-world scientific preparation.
+          </p>
+        </div>
+
+        <!-- Province Filter -->
+        <div class="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10 text-xs">
+          <button onclick="setPkFilter('all')" id="pk-flt-all"
+            class="px-3 py-1.5 rounded-lg font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">All
+            (15)</button>
+          <button onclick="setPkFilter('balochistan')" id="pk-flt-balochistan"
+            class="px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white">Balochistan (6)</button>
+          <button onclick="setPkFilter('gb')" id="pk-flt-gb"
+            class="px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white">Gilgit-Baltistan (4)</button>
+          <button onclick="setPkFilter('sindh')" id="pk-flt-sindh"
+            class="px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white">Sindh (3)</button>
+          <button onclick="setPkFilter('punjab')" id="pk-flt-punjab"
+            class="px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white">Punjab (2)</button>
+        </div>
+      </div>
+
+      <div id="pk-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Injected via JS -->
+      </div>
+    </section>
+
+
+    <!-- ========================================================= -->
+    <!-- 5. GLOBAL BENCHMARK ANALOG EXPLORER (PAGE) -->
+    <!-- ========================================================= -->
+    <section id="global-section"
+      class="page-view hidden min-h-[calc(100vh-4rem)] pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <div class="text-[11px] uppercase tracking-[0.25em] font-mono font-bold mb-1 text-cyan-400">
+            International Canonical Benchmarks
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+            20 International Documented Analogs
+          </h2>
+          <p class="text-sm text-white/65 mt-1 max-w-2xl leading-relaxed">
+            Apollo & Artemis astronaut geology training grounds, NASA Astrobiology field sites, and peer-reviewed
+            extreme desert/polar testbeds.
+          </p>
+        </div>
+
+        <!-- Global Filter -->
+        <div class="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10 text-xs">
+          <button onclick="setIntlFilter('all')" id="intl-flt-all"
+            class="px-3 py-1.5 rounded-lg font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">All 20
+            Global</button>
+          <button onclick="setIntlFilter('nasa')" id="intl-flt-nasa"
+            class="px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white">NASA Documented (13)</button>
+          <button onclick="setIntlFilter('mars')" id="intl-flt-mars"
+            class="px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white">Mars Affinity</button>
+          <button onclick="setIntlFilter('moon')" id="intl-flt-moon"
+            class="px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white">Moon Affinity</button>
+        </div>
+      </div>
+
+      <div id="intl-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Injected via JS -->
+      </div>
+    </section>
+
+
+    <!-- ========================================================= -->
+    <!-- 6. MULTI-SITE COMPARATIVE RADAR ANALYSIS (PAGE) -->
+    <!-- ========================================================= -->
+    <section id="compare-section"
+      class="page-view hidden min-h-[calc(100vh-4rem)] pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <div class="text-[11px] uppercase tracking-[0.25em] font-mono font-bold mb-1 text-amber-400">
+            Planetary Target vs Candidate Analogs
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+            Multi-Site Comparative Radar Analysis
+          </h2>
+          <p class="text-sm text-white/65 mt-1 max-w-2xl leading-relaxed">
+            Select up to 4 analog locations to benchmark simultaneously against the planetary physical baseline across
+            all 6 environmental dimensions.
+          </p>
+        </div>
+
+        <div class="text-xs font-mono px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/70">
+          Comparing <strong id="compare-count" class="text-white">4</strong> / 4 Sites
+        </div>
+      </div>
+
+      <!-- Selector Pills -->
+      <div class="mb-8">
+        <div class="text-[11px] uppercase tracking-[0.2em] font-mono text-white/40 mb-2">
+          Click sites below to toggle comparison (max 4):
+        </div>
+        <div id="compare-pills-container" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto no-scrollbar p-1">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- Visual Comparison: Left SVG Radar, Right Match Bars -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
+        <!-- SVG Radar Chart -->
+        <div class="lg:col-span-6 rounded-3xl p-6 backdrop-blur-xl flex flex-col items-center justify-center"
+          style="background: var(--color-surface); border: 1px solid var(--color-border);">
+          <div class="w-full flex items-center justify-between mb-4">
+            <span class="text-xs font-bold text-white uppercase tracking-wider font-mono">
+              6-Axis PASM Similarity Radar
+            </span>
+            <span class="text-[10px] text-white/40 font-mono">
+              Target Envelope: 100% Boundary
+            </span>
+          </div>
+
+          <div class="relative w-full max-w-sm aspect-square flex items-center justify-center">
+            <svg id="radar-svg" viewBox="0 0 280 280" class="w-full h-full block">
+              <!-- Radar geometry rendered via JS -->
+            </svg>
+          </div>
+
+          <div id="radar-legend"
+            class="flex flex-wrap items-center justify-center gap-4 mt-4 pt-4 border-t border-white/10 w-full text-xs">
+            <!-- Legend items injected via JS -->
+          </div>
+        </div>
+
+        <!-- Right Side: Composite Bars & Note -->
+        <div class="lg:col-span-6 rounded-3xl p-6 backdrop-blur-xl flex flex-col justify-between"
+          style="background: var(--color-surface); border: 1px solid var(--color-border);">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                Composite PASM Similarity
+              </span>
+              <span class="text-[10px] text-white/40 font-mono">
+                Gaussian Physical Envelope Match
+              </span>
+            </div>
+
+            <div id="compare-bars-list" class="space-y-4">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+
+          <div class="mt-6 p-4 rounded-2xl bg-black/30 border border-white/5 text-xs text-white/70 leading-relaxed">
+            <strong class="text-white block mb-1">Diagnostic Multi-Dimensionality:</strong>
+            No single terrestrial site on Earth mirrors Moon or Mars in all 6 dimensions simultaneously. Hyper-arid
+            desert sites (Atacama, Chagai) exhibit near-perfect moisture deficits but differ in temperature, whereas
+            high-altitude periglacial sites (Deosai, Dry Valleys) reproduce sub-zero thermal baselines.
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemetry Delta Matrix -->
+      <div class="rounded-3xl p-6 backdrop-blur-xl overflow-x-auto"
+        style="background: var(--color-surface); border: 1px solid var(--color-border);">
+        <h4 class="text-sm font-bold text-white uppercase tracking-wider font-mono mb-4">
+          Telemetry Delta Matrix (Site Values vs Target Conditions)
+        </h4>
+
+        <table class="w-full text-xs text-left border-collapse">
+          <thead>
+            <tr id="delta-matrix-head" class="border-b border-white/10 text-white/50 font-mono text-[11px]">
+              <!-- Injected via JS -->
+            </tr>
+          </thead>
+          <tbody id="delta-matrix-body" class="divide-y divide-white/5 font-mono">
+            <!-- Injected via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ========================================================= -->
+    <!-- 7. SCIENTIFIC WEIGHT TUNING & PASM ENGINE (PAGE) -->
+    <!-- ========================================================= -->
+    <section id="weights-section"
+      class="page-view hidden min-h-[calc(100vh-4rem)] pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <div class="text-[11px] uppercase tracking-[0.25em] font-mono font-bold mb-1 text-purple-400">
+            PASM Calibration Console
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+            Scientific Weight Tuning & Tolerances
+          </h2>
+          <p className="text-sm text-white/65 mt-1 max-w-2xl leading-relaxed">
+            Customize the relative scientific importance of environmental parameters in real time. All 35 analog scores
+            across the 3D globe and tables recalculate dynamically.
+          </p>
+        </div>
+
+        <button onclick="resetWeightsToDefaults()"
+          class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-white/15 border border-white/15 transition-all">
+          <span>↺ Reset to Model Defaults</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <!-- Sliders -->
+        <div id="weights-sliders-container" class="lg:col-span-7 space-y-4">
+          <!-- Injected via JS -->
+        </div>
+
+        <!-- Right Explanation Box -->
+        <div class="lg:col-span-5 space-y-5">
+          <div class="rounded-3xl p-6 backdrop-blur-xl"
+            style="background: var(--color-surface); border: 1px solid var(--color-border);">
+            <div class="text-xs font-bold text-white uppercase tracking-wider mb-3 font-mono">
+              Gaussian Tolerance Envelopes (PASM)
+            </div>
+            <p class="text-xs text-white/70 leading-relaxed mb-4">
+              PASM avoids sample-relative min-max distortion by measuring candidate site values against absolute
+              physical planetary envelopes:
+            </p>
+
+            <div
+              class="p-4 rounded-xl bg-black/50 border border-white/10 font-mono text-xs text-cyan-300 leading-relaxed mb-4 space-y-2">
+              <div class="text-white/40 text-[10px] uppercase">Single-Parameter Similarity:</div>
+              <div>s_k(x_k) = exp( - 0.5 * ((x_k - T_k) / σ_k)² )</div>
+              <div class="text-white/40 text-[10px] uppercase pt-1">Composite Score:</div>
+              <div>S(x) = 100 * ( Σ w_k · s_k(x_k) ) / ( Σ w_k )</div>
+            </div>
+
+            <div class="space-y-2.5 text-xs text-white/75">
+              <div class="flex items-start gap-2">
+                <span class="text-emerald-400 font-bold">✓</span>
+                <span><strong>100% Perfect Match Guarantee:</strong> If an Earth site exactly matches target conditions,
+                  its score equals 100.0%.</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="text-emerald-400 font-bold">✓</span>
+                <span><strong>Sample Invariance:</strong> Adding 100 new candidate sites causes 0.00% change in existing
+                  analog scores.</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="text-emerald-400 font-bold">✓</span>
+                <span><strong>Tolerance Envelope (σ):</strong> A deviation of 1σ yields ~60.6% similarity; a deviation
+                  of 2σ yields ~13.5%.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================= -->
+    <!-- 8. FULL TELEMETRY DATA MATRIX & CSV EXPORT (PAGE) -->
+    <!-- ========================================================= -->
+    <section id="data-section"
+      class="page-view hidden min-h-[calc(100vh-4rem)] pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <div class="text-[11px] uppercase tracking-[0.25em] font-mono font-bold mb-1 text-emerald-400">
+            Verified Scientific Telemetry Matrix
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+            Complete Evaluated Catalog & Dataset
+          </h2>
+          <p class="text-sm text-white/65 mt-1 max-w-2xl leading-relaxed">
+            Examine verified 30-year climatological parameters from NASA POWER and ASTER GDEM topographical metrics
+            across all 35 terrestrial analog sites.
+          </p>
+        </div>
+
+        <button onclick="exportCatalogToCSV()"
+          class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-black bg-white hover:bg-white/90 shadow-xl transition-all hover:scale-105 font-mono">
+          <svg class="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>Download Dataset (CSV)</span>
+        </button>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="rounded-2xl p-4 mb-6 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3"
+        style="background: var(--color-surface); border: 1px solid var(--color-border);">
+        <div class="flex items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10 text-xs">
+          <button id="tbl-flt-all" onclick="setTableRegionFilter('all')"
+            class="px-3 py-1.5 rounded-lg font-bold bg-white/15 text-white">All 35 Sites</button>
+          <button id="tbl-flt-pk" onclick="setTableRegionFilter('Pakistan')"
+            class="px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-emerald-400 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            Pakistan (15)
+          </button>
+          <button id="tbl-flt-intl" onclick="setTableRegionFilter('International')"
+            class="px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white">International (20)</button>
+        </div>
+
+        <div class="relative flex-1 min-w-[240px] max-w-sm">
+          <input id="tbl-search-input" oninput="handleTableSearch(this.value)" type="text"
+            placeholder="Search locations, countries, minerals..."
+            class="w-full px-3 py-2 rounded-xl text-xs bg-black/40 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:border-cyan-400/50" />
+        </div>
+      </div>
+
+      <!-- Table Container -->
+      <div class="rounded-3xl backdrop-blur-xl overflow-hidden border border-white/10 shadow-2xl"
+        style="background: var(--color-surface);">
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left border-collapse">
+            <thead>
+              <tr class="border-b border-white/10 text-white/50 font-mono text-[11px] uppercase tracking-wider"
+                style="background: rgba(0,0,0,0.3);">
+                <th onclick="sortTable('rank')" class="py-3 px-3 cursor-pointer hover:text-white">#</th>
+                <th onclick="sortTable('name')" class="py-3 px-3 cursor-pointer hover:text-white">Location</th>
+                <th onclick="sortTable('country')" class="py-3 px-3 cursor-pointer hover:text-white">Country</th>
+                <th onclick="sortTable('score')" class="py-3 px-3 cursor-pointer hover:text-white text-right">PASM Match
+                </th>
+                <th onclick="sortTable('elevation')" class="py-3 px-3 cursor-pointer hover:text-white text-right">Elev
+                  (m)</th>
+                <th onclick="sortTable('temp')" class="py-3 px-3 cursor-pointer hover:text-white text-right">Temp (°C)
+                </th>
+                <th onclick="sortTable('rain')" class="py-3 px-3 cursor-pointer hover:text-white text-right">Rain (mm/d)
+                </th>
+                <th onclick="sortTable('humidity')" class="py-3 px-3 cursor-pointer hover:text-white text-right">RH (%)
+                </th>
+                <th onclick="sortTable('sun')" class="py-3 px-3 cursor-pointer hover:text-white text-right">Solar (kWh)
+                </th>
+                <th onclick="sortTable('slope')" class="py-3 px-3 cursor-pointer hover:text-white text-right">Slope (°)
+                </th>
+                <th onclick="sortTable('relief')" class="py-3 px-3 cursor-pointer hover:text-white text-right">Relief
+                  (m)</th>
+                <th class="py-3 px-3 text-center">Inspect</th>
+              </tr>
+            </thead>
+            <tbody id="telemetry-table-body" class="divide-y divide-white/5 font-mono">
+              <!-- Injected via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================= -->
+    <!-- 9. SCIENTIFIC METHODOLOGY & LIMITATIONS (PAGE) -->
+    <!-- ========================================================= -->
+    <section id="science-section"
+      class="page-view hidden min-h-[calc(100vh-4rem)] pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="mb-8">
+        <div class="text-[11px] uppercase tracking-[0.25em] font-mono font-bold mb-1 text-cyan-400">
+          Transparency & Peer Review
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+          Planetary Analog Similarity Model (PASM) Methodology
+        </h2>
+        <p class="text-sm text-white/65 mt-1 max-w-2xl leading-relaxed">
+          Rigorous physical envelope modeling ensuring sample invariance and exact mathematical reproducibility.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-10">
+        <div class="lg:col-span-7 space-y-6">
+          <div class="rounded-3xl p-6 backdrop-blur-xl"
+            style="background: var(--color-surface); border: 1px solid var(--color-border);">
+            <h3 class="text-base font-bold text-white mb-2">NASA Formula Clarification</h3>
+            <p class="text-xs text-white/75 leading-relaxed mb-3">
+              NASA does <strong>not</strong> mandate or publish a single universal scalar equation to score
+              Earth-to-planetary similarity. While NASA documents qualitative criteria and mission-specific evaluation
+              frameworks, scalar similarity indexes are mathematical modeling choices.
+            </p>
+            <p class="text-xs text-white/75 leading-relaxed">
+              Standard sample-relative min-max scaling suffers from a critical flaw: adding or removing a site shifts
+              every other site's score. To eliminate this distortion, PASM introduces <strong>physically bounded
+                Gaussian tolerance envelopes</strong>.
+            </p>
+          </div>
+
+          <div class="rounded-3xl p-6 backdrop-blur-xl"
+            style="background: var(--color-surface); border: 1px solid var(--color-border);">
+            <h3 class="text-base font-bold text-white mb-3">Verified NASA Data Parameters</h3>
+            <div class="space-y-2 text-xs">
+              <div class="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+                <span class="text-white font-bold block">NASA POWER Climatology (T2M)</span>
+                <span class="text-white/60">Air Temperature at 2m height (°C)</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+                <span class="text-white font-bold block">NASA POWER Precipitation (PRECTOTCORR)</span>
+                <span class="text-white/60">Corrected daily rainfall (mm/day)</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+                <span class="text-white font-bold block">NASA POWER Relative Humidity (RH2M)</span>
+                <span class="text-white/60">Atmospheric water vapor ratio (%)</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+                <span class="text-white font-bold block">NASA POWER Solar Insolation (ALLSKY)</span>
+                <span class="text-white/60">Horizontal surface irradiance (kWh/m²/day)</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+                <span class="text-white font-bold block">ASTER 30m Global DEM (Slope & Relief)</span>
+                <span class="text-white/60">3x3 finite-difference slope (°) & 1-km relief (m)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 space-y-6">
+          <div class="rounded-3xl p-6 backdrop-blur-xl border border-amber-500/30"
+            style="background: rgba(30,20,10,0.5);">
+            <h3 class="text-sm font-bold text-amber-300 mb-2">Scientific Limitations & Planetary Disclosures</h3>
+            <ul class="space-y-2 text-xs text-white/75 list-disc list-inside leading-relaxed">
+              <li>
+                <strong>2m Air Temp vs Surface Skin Temp:</strong> The Moon has no atmosphere; on Mars, the 6 mbar
+                boundary layer produces a 20-30°C thermal gradient between the soil and 2m air.
+              </li>
+              <li>
+                <strong>Aridity vs Vacuum:</strong> Terrestrial hyper-aridity cannot replicate the absolute desiccating
+                vacuum of space.
+              </li>
+              <li>
+                <strong>Spatial Resolution:</strong> NASA POWER climatology spans ~50 km cells; microclimatic pockets
+                (caves, shadowed craters) are averaged over this grid.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+
+  <!-- ========================================================= -->
+  <!-- 10. LOCATION DOSSIER MODAL OVERLAY -->
+  <!-- ========================================================= -->
+  <div id="location-modal-backdrop" onclick="closeLocationModal()"
+    class="fixed inset-0 z-[100] hidden items-center justify-center p-3 sm:p-6 overflow-y-auto"
+    style="background: rgba(2,4,10,0.85); backdrop-filter: blur(12px);">
+    <div onclick="event.stopPropagation()"
+      class="animate-modal-in relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl my-auto"
+      style="background: var(--color-surface-strong); border: 1px solid var(--color-border); box-shadow: 0 0 80px -15px var(--color-accent-glow);">
+      <!-- Modal Header -->
+      <div class="sticky top-0 z-20 flex items-start justify-between p-5 sm:p-7 pb-4 backdrop-blur-xl"
+        style="background: linear-gradient(180deg, var(--color-surface-strong) 80%, transparent); border-bottom: 1px solid var(--color-border);">
+        <div>
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span id="modal-region-badge"
+              class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider font-mono">
+              Region
+            </span>
+            <span id="modal-tier-badge"
+              class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-white/70 bg-white/5 border border-white/10 uppercase">
+              NASA Documented
+            </span>
+            <span id="modal-affinity-badge"
+              class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-white/70 bg-white/5 border border-white/10 uppercase">
+              Mars Analog
+            </span>
+            <span id="modal-rank-badge"
+              class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold text-cyan-300 bg-cyan-950/40 border border-cyan-500/30">
+              Rank #1
+            </span>
+          </div>
+
+          <h2 id="modal-site-title" class="text-2xl sm:text-3xl font-extrabold text-white">Location Name</h2>
+          <div id="modal-coords-subtitle" class="text-xs text-white/50 mt-1 font-mono">
+            Coordinates: 0.00°N, 0.00°E • Elevation: 0 m
+          </div>
+        </div>
+
+        <button onclick="closeLocationModal()"
+          class="p-2 rounded-xl text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 sm:p-7 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left: DEM Map & Transect -->
+        <div class="lg:col-span-5 space-y-4">
+          <div>
+            <div class="text-[10px] uppercase tracking-[0.2em] font-mono text-white/40 mb-2">
+              ASTER 30m Global DEM Relief
+            </div>
+            <div id="modal-topo-map-box"
+              class="relative w-full rounded-xl overflow-hidden aspect-square border border-white/10 bg-[#060A14]">
+              <svg id="modal-topo-svg" viewBox="0 0 100 100" class="w-full h-full block"></svg>
+              <div class="absolute inset-0 pointer-events-none">
+                <div class="absolute top-1/2 left-0 w-full h-px bg-white/15"></div>
+                <div class="absolute left-1/2 top-0 h-full w-px bg-white/15"></div>
+                <div id="modal-topo-caption"
+                  class="absolute top-2 left-2 text-[9px] font-mono uppercase text-white/50 bg-black/60 px-1.5 py-0.5 rounded">
+                  ASTER DEM 30m
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="text-[10px] uppercase tracking-[0.2em] font-mono text-white/40 mb-2">
+              Center Transect Elevation Profile
+            </div>
+            <div class="rounded-xl p-3 bg-white/[0.02] border border-white/10">
+              <svg id="modal-transect-svg" viewBox="0 0 100 100" class="w-full aspect-[3/1] block"
+                preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="modalElevGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--color-accent)" stop-opacity="0.45" />
+                    <stop offset="100%" stop-color="var(--color-accent)" stop-opacity="0.02" />
+                  </linearGradient>
+                </defs>
+                <path id="modal-transect-area" d="" fill="url(#modalElevGrad)" />
+                <path id="modal-transect-line" d="" fill="none" stroke="var(--color-accent)" stroke-width="1.2"
+                  vector-effect="non-scaling-stroke" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Quick Telemetry Tiles -->
+          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="rounded-xl p-2.5 bg-white/[0.03] border border-white/10">
+              <div class="text-[9px] uppercase tracking-wider text-white/40">Air Temp</div>
+              <div id="modal-tile-temp" class="font-bold font-mono text-white mt-0.5">—</div>
+            </div>
+            <div class="rounded-xl p-2.5 bg-white/[0.03] border border-white/10">
+              <div class="text-[9px] uppercase tracking-wider text-white/40">Rain</div>
+              <div id="modal-tile-rain" class="font-bold font-mono text-white mt-0.5">—</div>
+            </div>
+            <div class="rounded-xl p-2.5 bg-white/[0.03] border border-white/10">
+              <div class="text-[9px] uppercase tracking-wider text-white/40">Slope</div>
+              <div id="modal-tile-slope" class="font-bold font-mono text-white mt-0.5">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Planetary Match Breakdown & NASA Scientific Rationale -->
+        <div class="lg:col-span-7 space-y-5">
+          <!-- Composite Score Ring -->
+          <div class="flex items-center gap-4 rounded-xl p-3 bg-white/[0.03] border border-white/10">
+            <svg width="76" height="76" viewBox="0 0 76 76" class="-rotate-90">
+              <circle cx="38" cy="38" r="32" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5" />
+              <circle id="modal-gauge-circle" cx="38" cy="38" r="32" fill="none" stroke="var(--color-accent)"
+                stroke-width="5" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="50"
+                style="filter: drop-shadow(0 0 6px var(--color-accent-glow)); transition: stroke-dashoffset 0.8s ease;" />
+            </svg>
+            <div>
+              <div class="text-[10px] uppercase tracking-[0.2em] text-white/50 font-mono">Composite PASM Score</div>
+              <div id="modal-score-text" class="text-2xl font-black font-mono" style="color: var(--color-accent);">
+                0.0% <span class="text-sm font-normal text-white/50">/ 100%</span>
+              </div>
+              <div class="text-[11px] text-white/60">Gaussian Physical Envelope Similarity</div>
+            </div>
+          </div>
+
+          <!-- Scientific Planetary Rationale Box -->
+          <div class="rounded-2xl p-4 text-xs leading-relaxed"
+            style="background: rgba(14,22,38,0.7); border-left: 4px solid var(--color-accent); border: 1px solid var(--color-border);">
+            <div class="font-bold text-white mb-1 uppercase tracking-wide text-[10px] font-mono">
+              Planetary Analog Scientific Rationale
+            </div>
+            <p id="modal-scientific-reason" class="text-white/85 mb-3 leading-relaxed">
+              Reason description...
+            </p>
+            <div class="font-bold text-white/70 mb-1 uppercase tracking-wide text-[10px] font-mono">
+              Geological Summary
+            </div>
+            <p id="modal-geological-summary" class="text-white/70 mb-3 leading-relaxed">
+              Summary description...
+            </p>
+            <div id="modal-citation" class="text-[11px] text-white/40 border-t border-white/10 pt-2">
+              Reference: ...
+            </div>
+          </div>
+
+          <!-- Feature Tags -->
+          <div>
+            <div class="text-[10px] uppercase tracking-[0.2em] font-mono text-white/40 mb-2">
+              Key Geomorphological Features
+            </div>
+            <div id="modal-features-tags" class="flex flex-wrap gap-1.5">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+
+          <!-- 6-Parameter PASM Breakdown -->
+          <div>
+            <div class="text-[10px] uppercase tracking-[0.2em] font-mono text-white/40 mb-2.5">
+              PASM Parameter Match Decomposition
+            </div>
+            <div id="modal-breakdown-bars" class="space-y-2">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-5 sm:px-7 py-4 flex items-center justify-between text-xs text-white/40 border-t border-white/10"
+        style="background: rgba(0,0,0,0.2);">
+        <span>NASA Space Apps Challenge 2026 • Earth Analog Finder</span>
+        <span>Source: NASA POWER API & ASTER GDEM 30m</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 py-12 px-6 text-center text-xs text-white/40 bg-black/40">
+    <div class="max-w-4xl mx-auto space-y-4">
+      <div class="flex items-center justify-center gap-2 text-white/70 font-semibold text-sm">
+        <span>Earth Analog Finder</span>
+        <span>•</span>
+        <span style="color: var(--color-accent)">NASA Space Apps Challenge 2026</span>
+      </div>
+
+      <!-- Quick Page Links in Footer -->
+      <div class="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-xs">
+        <button onclick="switchPage('overview')"
+          class="px-3 py-1 rounded-lg hover:text-white bg-white/5 transition-colors">Overview</button>
+        <button onclick="switchPage('globe')"
+          class="px-3 py-1 rounded-lg hover:text-white bg-white/5 transition-colors">3D Globe</button>
+        <button onclick="switchPage('pakistan')"
+          class="px-3 py-1 rounded-lg hover:text-emerald-400 bg-white/5 transition-colors">Pakistan (15)</button>
+        <button onclick="switchPage('global')"
+          class="px-3 py-1 rounded-lg hover:text-cyan-400 bg-white/5 transition-colors">Global (20)</button>
+        <button onclick="switchPage('compare')"
+          class="px-3 py-1 rounded-lg hover:text-white bg-white/5 transition-colors">Compare</button>
+        <button onclick="switchPage('weights')"
+          class="px-3 py-1 rounded-lg hover:text-white bg-white/5 transition-colors">Weights</button>
+        <button onclick="switchPage('data')"
+          class="px-3 py-1 rounded-lg hover:text-white bg-white/5 transition-colors">Dataset</button>
+        <button onclick="switchPage('science')"
+          class="px-3 py-1 rounded-lg hover:text-white bg-white/5 transition-colors">Methodology</button>
+      </div>
+
+      <p class="leading-relaxed">
+        Integrating 30-Year Climatology from the <strong>NASA POWER API</strong> and topographical metrics from the
+        <strong>ASTER 30m Global DEM</strong> with the <strong>Planetary Analog Similarity Model (PASM)</strong>.
+      </p>
+      <div class="pt-2 text-[11px] text-white/30">
+        15 Analogs in Pakistan (Balochistan, Sindh, Punjab, Gilgit-Baltistan) &bull; 20 International Apollo/Artemis
+        benchmarks &bull; Developed for NASA Space Apps 2026.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================= -->
+  <!-- JAVASCRIPT: DATA, THREE.JS 3D SCENES, PASM ENGINE & HUD -->
+  <!-- ========================================================= -->
+  <script>
+    // -----------------------------------------------------------
+    // 1. DATASET: 35 SITES WITH NASA POWER & ASTER DEM METRICS
+    // -----------------------------------------------------------
+    const RAW_SITES = [
+      // 15 PAKISTAN SITES
+      { id: "cholistan", name: "Cholistan Desert", country: "Pakistan", region: "Pakistan", lat: 28.5, lng: 71.8, elevation: 116.73, temp: 28.06, rain: 0.54, humidity: 30.97, sun: 5.575, slope: 0.118, relief: 26.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Fluvial Inversion", "Hakra Paleochannel", "Aeolian Sand Sea", "Oxidized Dunes"], geologicalSummary: "Extensive hyper-arid sand sea preserving dried relic branches of the ancient Hakra River system.", scientificReason: "Relict inverted fluvial channels and winding paleoriver ridges directly model exhumed Martian river channels observed in Aeolis Dorsa and Eberswalde Crater.", citation: "Farooq et al. (2019), J. Arid Land Studies; NASA Mars Fluvial Geomorphology." },
+      { id: "thar", name: "Thar Desert", country: "Pakistan", region: "Pakistan", lat: 25.0, lng: 70.5, elevation: 96.21, temp: 27.78, rain: 0.83, humidity: 40.28, sun: 5.7386, slope: 0.313, relief: 41.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Aeolian Saltation", "Barchan Sand Ripples", "Pedogenic Caliche", "Evaporite Hardpans"], geologicalSummary: "Subtropical arid basin characterized by wind-driven longitudinal sand ripples and pedogenic caliche carbonate crusts.", scientificReason: "Provides a terrestrial testbed for active aeolian saltation mechanics, transverse aeolian ridges (TARs), and subsurface carbonate cementation akin to Gale Crater.", citation: "Singhvi & Kar (2004), Earth Sci. Rev.; Grotzinger et al. (2014), Science." },
+      { id: "kharan", name: "Kharan Desert", country: "Pakistan", region: "Pakistan", lat: 28.5, lng: 65.4, elevation: 1105.01, temp: 22.09, rain: 0.35, humidity: 26.68, sun: 6.0454, slope: 0.237, relief: 16.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Hyper-Arid Closed Basin", "Active Yardangs", "Mega-Dunes", "Slickenside Clays"], geologicalSummary: "Enclosed endorheic desert basin in western Balochistan with extreme diurnal temperature extremes and migrating sand sheets.", scientificReason: "Closed-basin sand deflation dynamics, mega-ripples, and abrasive yardang fields simulate circumpolar Martian erg fields like Olympia Undae.", citation: "Khan et al. (2017), Arabian J. Geosciences; Ward (1979), JGR Mars." },
+      { id: "chagai", name: "Chagai (Dalbandin)", country: "Pakistan", region: "Pakistan", lat: 28.9, lng: 64.4, elevation: 939.02, temp: 23.21, rain: 0.2, humidity: 23.64, sun: 6.0065, slope: 0.87, relief: 60.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Hydrothermal Alteration", "Solfataric Vents", "Jarosite & Native Sulfur", "Acid Sulfate Weathering"], geologicalSummary: "Neogene calc-alkaline magmatic arc displaying epithermal alteration, hydrothermal breccias, and native sulfur deposits.", scientificReason: "Hydrothermal solfataras and jarosite-bearing acidic alteration halos match the mineralogical fingerprints discovered by the Spirit and Opportunity rovers on Mars.", citation: "Perello et al. (2008), Econ. Geology; Squyres et al. (2007), Science." },
+      { id: "gwadar", name: "Gwadar Coast", country: "Pakistan", region: "Pakistan", lat: 25.1, lng: 62.3, elevation: 13.62, temp: 26.05, rain: 0.23, humidity: 70.84, sun: 5.7746, slope: 1.766, relief: 89.0, targetAffinity: "Both", category: "Literature Supported", primaryFeatures: ["Wave-Cut Structural Benches", "Step Fault Scarps", "Saline Mudflats", "Terramechanics Testing"], geologicalSummary: "Makran subduction margin featuring uplifted marine terraces, fault-line scarps, and desiccated coastal sabkhas.", scientificReason: "Stepped bench geometry, fractured sandstone caprocks, and saline mudflats provide a rigorous obstacle ground for rover chassis traversability trials.", citation: "Harms et al. (1984), USGS Spec. Paper; Cabrol & Grin (2010), Lakes on Mars." },
+      { id: "deosai", name: "Deosai Plains", country: "Pakistan", region: "Pakistan", lat: 35.0, lng: 75.4, elevation: 4144.53, temp: -2.54, rain: 1.23, humidity: 67.63, sun: 4.1592, slope: 2.405, relief: 105.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["High-Altitude Permafrost", "Cryoturbation", "Stone Circles", "Polygon Ground"], geologicalSummary: "One of the world's highest alpine plateaus (avg 4,114 m) characterized by continuous permafrost and patterned polygon grounds.", scientificReason: "Freeze-thaw cryoturbation polygons and sub-zero regolith temperatures reproduce periglacial patterned ground photographed by the NASA Phoenix Mars Lander.", citation: "Hewitt (2014), Karakoram Himalayas; Smith et al. (2009, Phoenix Lander), Science." },
+      { id: "skardu", name: "Skardu (Karakoram)", country: "Pakistan", region: "Pakistan", lat: 35.3, lng: 75.6, elevation: 3918.33, temp: -0.23, rain: 0.97, humidity: 54.91, sun: 4.1592, slope: 0.728, relief: 47.0, targetAffinity: "Both", category: "Literature Supported", primaryFeatures: ["Katpana Cold Dunes", "Glacial Bedrock Scouring", "Dry High-Altitude Air", "Regolith Simulant"], geologicalSummary: "Intermontane valley hosting cold-climate sand dunes (Katpana) resting directly on glacio-fluvial scoured granitic basement.", scientificReason: "Juxtaposition of windblown sand sheets against bare scoured crystalline basement mirrors polar erg borders and lunar highland boundary terrain.", citation: "Owen et al. (2002), QSR; Mangold (2005), Icarus." },
+      { id: "hunza", name: "Hunza Valley", country: "Pakistan", region: "Pakistan", lat: 36.3, lng: 74.7, elevation: 4490.97, temp: -5.46, rain: 0.51, humidity: 61.57, sun: 4.8036, slope: 9.632, relief: 796.0, targetAffinity: "Both", category: "Literature Supported", primaryFeatures: ["Lobate Debris Aprons (LDAs)", "Rock Glaciers", "Supraglacial Debris", "Steep Wall Slopes"], geologicalSummary: "Steep Karakoram gorge featuring massive debris-covered glaciers and active paraglacial rockfall aprons.", scientificReason: "Supraglacial debris mantles insulating relict ice cores provide exact terrestrial analogues for Martian Lobate Debris Aprons (LDAs) and buried ice reserves.", citation: "Scherler et al. (2011), J. Glaciology; Head et al. (2010), EPSL." },
+      { id: "salt-range", name: "Salt Range", country: "Pakistan", region: "Pakistan", lat: 32.6, lng: 72.0, elevation: 414.31, temp: 24.34, rain: 1.36, humidity: 41.38, sun: 5.1487, slope: 7.778, relief: 389.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Precambrian Halite", "Thick Gypsum & Anhydrite", "Evaporite Fluid Inclusions", "Astrobiology"], geologicalSummary: "Ancient thrust belt exposing massive Neoproterozoic evaporite sequences, halite salt beds, and red marl formations.", scientificReason: "Bedded sulfates, halite fluid inclusions, and subsurface brine preservation conditions match orbital CRISM chloride/sulfate detections across Martian terrae.", citation: "Gee (1989), GSA Spec. Paper; Osterloo et al. (2008, Mars Chlorides), Science." },
+      { id: "nok-kundi", name: "Nok Kundi (Chagai)", country: "Pakistan", region: "Pakistan", lat: 28.8, lng: 62.8, elevation: 863.81, temp: 22.44, rain: 0.2, humidity: 24.08, sun: 6.0149, slope: 0.364, relief: 21.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Terminal Playa Mudcracks", "Hamun-i-Mashkel Basin", "Saline Crust Deflation", "Extreme Aridity"], geologicalSummary: "Hyper-arid terminus of the Hamun-i-Mashkel playa lake surrounded by expansive cracked claypans and salt flats.", scientificReason: "Desiccated polygonal mudcracks and dry evaporite playa surfaces replicate ancient desiccating paleolake basins such as Jezero and Meridiani Planum.", citation: "Hunting Survey Corp. (1960); Squyres & Knoll (2005), EPSL." },
+      { id: "nara", name: "Nara Desert", country: "Pakistan", region: "Pakistan", lat: 26.5, lng: 69.0, elevation: 39.49, temp: 28.65, rain: 0.4, humidity: 34.52, sun: 5.7086, slope: 0.477, relief: 41.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Saline Dhands (Playa Lakes)", "Interdunal Sulfate Crusts", "High Evaporation Deficit", "Iron-Oxide Sands"], geologicalSummary: "Hyper-arid dune corridor in eastern Sindh featuring seasonal hypersaline depressions (dhands) with alkaline sulfate salts.", scientificReason: "Interdune playa crystallization and sulfate salt crust dynamics mirror the evaporative playa sedimentary cycle documented in Burns Formation sediments.", citation: "Gaur et al. (2015), J. Earth Syst. Sci.; Bridges et al. (2017), Space Sci. Rev." },
+      { id: "kirthar", name: "Kirthar Range", country: "Pakistan", region: "Pakistan", lat: 26.0, lng: 67.3, elevation: 348.76, temp: 25.9, rain: 0.46, humidity: 44.4, sun: 5.6215, slope: 1.596, relief: 93.0, targetAffinity: "Both", category: "Literature Supported", primaryFeatures: ["Folded Carbonate Ridges", "Boulder-Strewn Talus", "Erosional Escarpments", "Terramechanics"], geologicalSummary: "North-south trending folded mountain range exposing weathered tertiary limestone cliffs, talus aprons, and skeletal gravel soils.", scientificReason: "Barren angular limestone scree and sharp bedrock scarps create ideal testing conditions for planetary rover suspension and wheel abrasion analysis.", citation: "Bender & Raza (1995), Geology of Pakistan; NASA JPL Terramechanics." },
+      { id: "hingol", name: "Hingol Coast", country: "Pakistan", region: "Pakistan", lat: 25.4, lng: 65.5, elevation: 136.86, temp: 26.1, rain: 0.38, humidity: 57.71, sun: 5.7797, slope: 0.071, relief: 6.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Sedimentary Mud Volcanism", "Chandragup Cones", "Methane Gas Venting", "Wind-Carved Yardangs"], geologicalSummary: "Coastal Makran zone with world-class active mud volcanoes (Chandragup) erupting cold pressurized slurry, alongside sculpted mudstone yardangs.", scientificReason: "Mud volcano morphology and sub-surface methane venting provide direct analogs for putative sedimentary volcanism observed in Chryse and Acidalia Planitiae.", citation: "Delisle et al. (2002), Marine Geology; Komatsu et al. (2016), Icarus." },
+      { id: "quetta", name: "Quetta Plateau", country: "Pakistan", region: "Pakistan", lat: 30.2, lng: 67.0, elevation: 1803.8, temp: 16.3, rain: 0.49, humidity: 33.63, sun: 5.9962, slope: 0.802, relief: 45.0, targetAffinity: "Both", category: "Literature Supported", primaryFeatures: ["High Intermontane Karst", "Limestone Caves", "Microclimatic Shelters", "Diurnal Temp Extremes"], geologicalSummary: "Elevated tectonic basin (1,800 m) flanked by Mesozoic limestone massifs hosting karst caves and semi-arid scrublands.", scientificReason: "Natural subterranean limestone caves provide thermal stability and radiation shielding analogs for planetary lava tube habitat exploration.", citation: "Ahmad & Kazmi (1963), GSP Records; Titus et al. (2021), Nature Astronomy." },
+      { id: "khunjerab", name: "Khunjerab Pass", country: "Pakistan", region: "Pakistan", lat: 36.85, lng: 75.4, elevation: 4498.97, temp: -5.19, rain: 0.3, humidity: 53.98, sun: 4.9536, slope: 12.37, relief: 567.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Extreme Altitude (4693m)", "Hypobaric Atmosphere", "Intense Solar UV-B", "Sub-Zero Permafrost"], geologicalSummary: "High mountain pass on the Pakistan-China border at 4,693 meters altitude with thin air, intense UV radiation, and perpetual cold.", scientificReason: "Hypobaric atmospheric pressure (approx 55 kPa) combined with high flux solar UV-B stress creates biological survival constraints approaching Martian conditions.", citation: "Khan et al. (2020), Alpine Science; Cockell et al. (2000), Icarus." },
+
+      // 20 INTERNATIONAL SITES
+      { id: "atacama", name: "Atacama Desert (Chile)", country: "Chile", region: "International", lat: -24.5, lng: -69.2, elevation: 2367.69, temp: 14.51, rain: 0.03, humidity: 24.88, sun: 7.2058, slope: 4.651, relief: 267.0, targetAffinity: "Mars", category: "NASA Documented", primaryFeatures: ["Hyper-Arid Core (<1 mm/yr)", "Perchlorate Salts", "Solar UV-B Bombardment", "Viking Benchmark"], geologicalSummary: "Oldest and driest non-polar desert on Earth, characterized by nitrate-perchlorate crusts and near-zero organic matter.", scientificReason: "Gold-standard Mars analog used by NASA to benchmark Viking, Phoenix, and Mars 2020 life-detection instrumentation and soil perchlorate chemistry.", citation: "Navarro-Gonzalez et al. (2003), Science; NASA Astrobiology Institute." },
+      { id: "dry-valleys", name: "Dry Valleys (Antarctica)", country: "Antarctica", region: "International", lat: -77.5, lng: 162.5, elevation: 859.61, temp: -24.57, rain: 0.2, humidity: 81.74, sun: 2.9993, slope: 8.298, relief: 450.0, targetAffinity: "Mars", category: "NASA Documented", primaryFeatures: ["Cold Hyper-Aridity", "Mean Temp -24.6C", "Endolithic Cyanobacteria", "Dry Permafrost Regolith"], geologicalSummary: "Ice-free polar valleys kept snowless by fierce katabatic winds, exhibiting dry permafrost and sand-wedge polygons.", scientificReason: "Coldest and driest environment on Earth; primary model for cryptoendolithic life survival in porous sandstone under intense cold and desiccation.", citation: "Marchant & Head (2007), Icarus; NASA Astrobiology Roadmap." },
+      { id: "death-valley", name: "Death Valley (USA)", country: "USA", region: "International", lat: 36.5, lng: -117.0, elevation: 845.57, temp: 19.1, rain: 0.34, humidity: 29.33, sun: 5.7024, slope: 9.549, relief: 481.0, targetAffinity: "Mars", category: "NASA Documented", primaryFeatures: ["Alluvial Fan Sediments", "Borate/Sulfate Crusts", "Badlands Erosion", "MSL Rover Testing"], geologicalSummary: "Deep extensional rift basin containing hyper-saline salt pans, layered alluvial gravel fans, and eroded mudstone badlands.", scientificReason: "Field testing ground for NASA Curiosity and Perseverance rovers to evaluate wheel wear on ventifacts and decipher mudstone-sulfate stratigraphy.", citation: "JPL MSL Instrument Field Trials; Grotzinger et al. (2015), Science." },
+      { id: "lut-desert", name: "Lut Desert (Iran)", country: "Iran", region: "International", lat: 30.5, lng: 59.0, elevation: 400.86, temp: 26.17, rain: 0.22, humidity: 21.88, sun: 5.9496, slope: 0.338, relief: 52.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Record Land Skin Temp (70.7C)", "Massive Kalut Yardangs", "Total Biological Sterility", "Deflation Plains"], geologicalSummary: "Tectonic depression featuring giant wind-carved yardang ridges (kaluts) and the highest satellite-measured surface skin temperatures on Earth.", scientificReason: "Colossal yardang megastructures and absolute abiotic desert corridors provide direct morphometric analogues to Martian yardangs in Medusae Fossae.", citation: "Mildrexler et al. (2011), BAMS; Goudie (2007), Geography Compass." },
+      { id: "mdrs-utah", name: "Mars Desert Station (Utah)", country: "USA", region: "International", lat: 38.4, lng: -110.8, elevation: 1659.66, temp: 11.75, rain: 0.66, humidity: 43.14, sun: 5.2874, slope: 0.656, relief: 46.0, targetAffinity: "Mars", category: "NASA Documented", primaryFeatures: ["Inverted River Channels", "Smectite Clays & Gypsum", "Human EVA Simulation", "MDRS Research Habitat"], geologicalSummary: "Mesozoic Morrison Formation exposure exhibiting exhumed inverted river sandstones, swelling bentonite clays, and desert varnish.", scientificReason: "Operational base for human planetary EVA exploration simulations; geomorphology closely mirrors inverted fluvial channels in Jezero Crater.", citation: "Clarke et al. (2004), Int. J. Astrobiology; Mars Society MDRS Archives." },
+      { id: "devon-island", name: "Devon Island (Canada)", country: "Canada", region: "International", lat: 75.4, lng: -89.0, elevation: 154.2, temp: -13.98, rain: 0.84, humidity: 94.15, sun: 2.3155, slope: 3.427, relief: 342.0, targetAffinity: "Both", category: "NASA Documented", primaryFeatures: ["Haughton Impact Crater (23km)", "Shatter Cones & Impact Melt", "Polar Desert Permafrost", "HMP Base"], geologicalSummary: "High-Arctic polar desert hosting the 23-km Haughton meteorite impact structure carved into Ordovician carbonates.", scientificReason: "Primary joint NASA/SETI Haughton-Mars Project (HMP) testbed for rover robotics, impact breccia petrology, and lunar/Martian crater traverses.", citation: "Lee et al. (1998), LPSC; Osinski et al. (2005), Meteoritics & Planetary Sci." },
+      { id: "mauna-kea", name: "Mauna Kea (Hawaii)", country: "USA", region: "International", lat: 19.8, lng: -155.5, elevation: 635.57, temp: 20.9, rain: 4.41, humidity: 82.05, sun: 5.28, slope: 13.0, relief: 707.0, targetAffinity: "Both", category: "NASA Documented", primaryFeatures: ["Basaltic Tephra Cones", "NASA JSC-1 Simulant", "Apollo Geology Training", "Lava Tube Analog"], geologicalSummary: "Dormant oceanic shield volcano whose summit cone fields expose unweathered basaltic cinder, palagonitized ash, and volcanic bombs.", scientificReason: "Historic training ground for Apollo lunar astronauts; source material for NASA JSC-1 lunar and JSC Mars-1 regolith simulant standards.", citation: "Allen et al. (1998), Space 98; Apollo Astronaut Field Training Archives." },
+      { id: "danakil", name: "Danakil Depression (Ethiopia)", country: "Ethiopia", region: "International", lat: 14.2, lng: 40.3, elevation: 1063.31, temp: 25.96, rain: 1.23, humidity: 46.84, sun: 5.957, slope: 0.046, relief: 14.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Poly-Extreme Dallol Vents", "Negative pH (Acidic Brines)", "Native Sulfur Chimneys", "Hydrothermal Silica"], geologicalSummary: "Rift depression 125 meters below sea level with boiling hypersaline acidic hydrothermal pools, iron crusts, and toxic chlorine/sulfur gas vents.", scientificReason: "Poly-extreme thermodynamic limit for habitability, testing biosignature preservation in hot hyper-acidic iron-sulfate hydrothermal chimneys.", citation: "Cavalazzi et al. (2019), Astrobiology; Kotopoulou et al. (2019)." },
+      { id: "iceland", name: "Iceland Highlands", country: "Iceland", region: "International", lat: 64.8, lng: -18.5, elevation: 792.88, temp: -2.41, rain: 2.77, humidity: 94.5, sun: 2.6678, slope: 5.579, relief: 327.0, targetAffinity: "Both", category: "NASA Documented", primaryFeatures: ["Askja Caldera Basalts", "Glacio-Volcanic Palagonite", "Apollo Astronaut Training", "Barren Pumice Plains"], geologicalSummary: "Volcanic plateau dominated by subglacial tindar ridges, basaltic lava flows, and desolate pumice deflation plains.", scientificReason: "Apollo astronauts Neil Armstrong and Buzz Aldrin trained at Askja in 1965 and 1967 to master field geology on fresh, unweathered basaltic tephra.", citation: "NASA Apollo Astronaut Field Training Archives; Mangold et al. (2004)." },
+      { id: "tibetan-plateau", name: "Tibetan Plateau", country: "China", region: "International", lat: 33.0, lng: 88.0, elevation: 4956.96, temp: -3.53, rain: 1.01, humidity: 51.48, sun: 5.3854, slope: 1.541, relief: 133.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["High-Altitude Cold Desert", "Qaidam Basin Yardangs", "Permafrost Deflation", "Sulfate Playa Lakes"], geologicalSummary: "Highest plateau on Earth hosting the hyper-arid Qaidam Basin with dense yardang fields, saline playa crusts, and thin atmosphere.", scientificReason: "High altitude, extreme evaporation-to-precipitation deficit, and continuous permafrost mimic Martian mid-latitude cold desert processes.", citation: "Kong et al. (2018), Astrobiology; Xiao et al. (2017), Earth-Sci. Rev." },
+      { id: "taklamakan", name: "Taklamakan Desert (China)", country: "China", region: "International", lat: 39.0, lng: 83.0, elevation: 1119.03, temp: 13.08, rain: 0.16, humidity: 30.83, sun: 4.9913, slope: 0.179, relief: 31.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Cold Continental Sand Sea", "Shifting Barchan Dunes", "Severe Dust Storms", "Atmospheric Aerosols"], geologicalSummary: "Hyper-arid cold winter sand desert surrounded by rugged mountain barriers, prone to sustained atmospheric dust storms.", scientificReason: "Large-scale dust lifting, suspension dynamics, and thermal eddy circulation provide terrestrial physics benchmarks for Martian global dust storms.", citation: "Wang et al. (2002), Geomorphology; Fenton et al. (2005), JGR Planets." },
+      { id: "sahara", name: "Sahara Desert", country: "Niger / Chad", region: "International", lat: 23.0, lng: 12.0, elevation: 893.07, temp: 22.25, rain: 0.09, humidity: 24.57, sun: 6.6444, slope: 0.701, relief: 40.0, targetAffinity: "Mars", category: "Literature Supported", primaryFeatures: ["Tenere Deflation Plains", "Desert Varnish Coatings", "Stony Serir Pavements", "Aeolian Abrasion"], geologicalSummary: "Expansive central Saharan hyper-arid gravel plains (serir) polished by intense aeolian abrasion and coated with manganese desert varnish.", scientificReason: "Pebble-deflation desert pavements and rock varnish accretion rates directly match surface rock coatings analyzed by Spirit and Opportunity rovers.", citation: "Goudie & Middleton (2001); Greeley & Iversen (1985), Wind as a Geological Process." },
+      { id: "rio-tinto", name: "Rio Tinto (Spain)", country: "Spain", region: "International", lat: 37.7, lng: -6.55, elevation: 187.78, temp: 18.01, rain: 1.28, humidity: 62.53, sun: 5.0191, slope: 1.321, relief: 86.0, targetAffinity: "Mars", category: "NASA Documented", primaryFeatures: ["Extreme Acid River (pH ~2)", "Jarosite & Goethite", "NASA MARTE Drilling", "Chemolithoautotrophs"], geologicalSummary: "River system draining the Iberian Pyrite Belt characterized by intensely acidic waters (pH 1.7-2.5) saturated with ferric iron and sulfates.", scientificReason: "Key field site for the NASA MARTE deep drilling project; models the formation and biosignature preservation of Martian jarosite and hematite spherules.", citation: "Fernandez-Remolar et al. (2005); Stoker et al. (2008), Astrobiology." },
+      { id: "craters-of-the-moon", name: "Craters of the Moon (USA)", country: "USA", region: "International", lat: 43.46, lng: -113.56, elevation: 1891.71, temp: 5.69, rain: 1.14, humidity: 59.83, sun: 4.5494, slope: 1.222, relief: 80.0, targetAffinity: "Moon", category: "NASA Documented", primaryFeatures: ["Apollo Astronaut Training", "Pristine Flood Basalts", "Spatter Cones & Rifts", "NASA FINESSE Project"], geologicalSummary: "Holocene flood basalt field in Idaho displaying fissures, lava tubes, spatter ramparts, and aa/pahoehoe flows.", scientificReason: "Apollo astronaut geology training destination in 1969; currently utilized by NASA FINESSE and SUBX teams for volcanic terrain exploration concepts.", citation: "Hughes et al. (2019), Planetary & Space Science; NASA FINESSE Project." },
+      { id: "svalbard", name: "Svalbard AMASE (Norway)", country: "Norway", region: "International", lat: 79.4, lng: 13.3, elevation: 343.29, temp: -7.62, rain: 1.82, humidity: 94.8, sun: 2.0894, slope: 6.935, relief: 484.0, targetAffinity: "Mars", category: "NASA Documented", primaryFeatures: ["Carbonate Mantle Globules", "Bockfjorden Hydrothermal Vents", "AMASE Field Expeditions", "ALH84001 Analog"], geologicalSummary: "High-Arctic volcanic setting in Svalbard featuring quaternary basaltic volcanic centers cutting through permafrost and mantle xenoliths.", scientificReason: "Home of the NASA/ESA Arctic Mars Analog Svalbard Expedition (AMASE); hosts carbonate globules identical in texture to those in Martian meteorite ALH84001.", citation: "Steele et al. (2007), LPSC; Treiman (2003), Astrobiology." },
+      { id: "pilbara", name: "Pilbara Craton (Australia)", country: "Australia", region: "International", lat: -21.15, lng: 119.75, elevation: 196.43, temp: 27.37, rain: 1.17, humidity: 38.46, sun: 6.4068, slope: 0.532, relief: 29.0, targetAffinity: "Mars", category: "NASA Documented", primaryFeatures: ["3.5 Ga Apex Chert", "Archean Stromatolites", "Earliest Evidence of Life", "Mars 2020 Training"], geologicalSummary: "Ancient Archean continental block preserving pristine 3.48 billion-year-old bedded barite, hydrothermal cherts, and fossilized stromatolite structures.", scientificReason: "NASA Astrobiology and Mars 2020 science team primary training ground for identifying ancient microscopic life biosignatures in silicified rocks.", citation: "Van Kranendonk et al. (2008); NASA Mars 2020 Science Team Field Guide." },
+      { id: "teide", name: "Teide National Park (Spain)", country: "Spain", region: "International", lat: 28.27, lng: -16.64, elevation: 138.18, temp: 20.16, rain: 0.68, humidity: 77.2, sun: 5.2154, slope: 8.714, relief: 883.0, targetAffinity: "Both", category: "NASA Documented", primaryFeatures: ["High Caldera (2200m)", "Phonolitic Lava Fields", "Intense Solar UV", "ExoMars Instrument Testing"], geologicalSummary: "High-elevation volcanic caldera in Tenerife featuring phonolitic blocky lavas, pumice slopes, and sparse xerophytic vegetation.", scientificReason: "ESA and NASA field test site for Raman spectroscopy, panoramic camera calibration, and rover autonomous drive algorithms under high UV flux.", citation: "Preston et al. (2012); ESA ExoMars Field Trials Team." },
+      { id: "meteor-crater", name: "Meteor Crater (USA)", country: "USA", region: "International", lat: 35.03, lng: -111.02, elevation: 1914.92, temp: 11.36, rain: 1.14, humidity: 47.71, sun: 5.5637, slope: 0.761, relief: 98.0, targetAffinity: "Both", category: "NASA Documented", primaryFeatures: ["1.2 km Impact Structure", "Shocked Quartz & Coesite", "Inverted Flap Ejecta", "Apollo & Artemis Training"], geologicalSummary: "Best-preserved simple meteorite impact crater on Earth (Barringer Crater, Arizona), 1.2 km in diameter, in layered sedimentary sandstone/dolomite.", scientificReason: "Canonical training site for all Apollo lunar moonwalkers (1960s) and Artemis astronauts (2020-present) to study impact cratering mechanics and ejecta blankets.", citation: "Shoemaker (1960); NASA Artemis Astronaut Field Geology Training Manual." },
+      { id: "kilbourne-hole", name: "Kilbourne Hole Maar (USA)", country: "USA", region: "International", lat: 31.97, lng: -106.96, elevation: 1275.56, temp: 17.68, rain: 0.63, humidity: 39.08, sun: 5.8987, slope: 1.472, relief: 116.0, targetAffinity: "Moon", category: "NASA Documented", primaryFeatures: ["Maar Volcanic Explosion", "Mantle Xenoliths (Peridotite)", "Apollo Training Ground", "Artemis Geology Training"], geologicalSummary: "Phreatomagmatic maar crater in southern New Mexico exposing explosive ejecta rims embedded with green mantle peridotite xenoliths.", scientificReason: "NASA selected Kilbourne Hole for Apollo and Artemis astronaut field geology classes to simulate lunar crater ejecta sampling and rim traversing.", citation: "NASA Artemis Geology Training Records (2022); Schaber (2005)." },
+      { id: "san-francisco-vf", name: "San Francisco Volcanic Field (USA)", country: "USA", region: "International", lat: 35.58, lng: -111.64, elevation: 2093.24, temp: 10.17, rain: 1.02, humidity: 47.94, sun: 5.5637, slope: 2.482, relief: 158.0, targetAffinity: "Moon", category: "NASA Documented", primaryFeatures: ["SP Cinder Cone", "Apollo LRV Mobility Trials", "Artificial Cinder Lakes", "Artemis Rover Testing"], geologicalSummary: "Extensive volcanic field in northern Arizona with over 600 cinder cones, blocky basalt flows, and artificial Apollo test crater fields.", scientificReason: "Historic testing site for the Apollo Lunar Roving Vehicle (LRV) and astronaut field geology, including the USGS-dynamited Cinder Lake lunar field.", citation: "Schaber (2005), USGS Open-File Report 2005-1190; NASA Desert RATS." }
+    ];
+
+    // -----------------------------------------------------------
+    // 2. PLANETARY TARGET MODELS & TOLERANCES
+    // -----------------------------------------------------------
+    const PLANETARY_MODELS = {
+      mars: {
+        name: "Mars (Global Average Surface)",
+        shortName: "Mars Global Surface",
+        description: "Represents mean Martian surface conditions across global volcanic and desert plains (Viking, Curiosity, Perseverance datasets).",
+        targets: { temp: -59.0, rain: 0.0, humidity: 0.0, sun: 3.5, slope: 4.0, relief: 50.0 },
+        tolerances: { temp: 35.0, rain: 1.2, humidity: 25.0, sun: 2.5, slope: 8.0, relief: 150.0 },
+        defaultWeights: { temp: 0.22, rain: 0.23, humidity: 0.15, sun: 0.15, slope: 0.13, relief: 0.12 }
+      },
+      moon: {
+        name: "Moon (Sunlit South Pole - Artemis Zone)",
+        shortName: "Lunar South Pole (Artemis)",
+        description: "Represents sunlit crater rims near the Lunar South Pole (Shackleton rim, Malapert Mountain) targeted by NASA Artemis missions.",
+        targets: { temp: -53.0, rain: 0.0, humidity: 0.0, sun: 0.9, slope: 5.0, relief: 60.0 },
+        tolerances: { temp: 35.0, rain: 1.0, humidity: 20.0, sun: 2.0, slope: 8.0, relief: 150.0 },
+        defaultWeights: { temp: 0.20, rain: 0.25, humidity: 0.15, sun: 0.20, slope: 0.10, relief: 0.10 }
+      }
+    };
+
+    // -----------------------------------------------------------
+    // 3. APPLICATION STATE
+    // -----------------------------------------------------------
+    let currentMode = "moon"; // 'moon' or 'mars'
+    let activeWeights = { ...PLANETARY_MODELS[currentMode].defaultWeights };
+    let evaluatedSites = [];
+    let globeRegionFilter = "all";
+    let globeSearchQuery = "";
+    let globeMinElev = 0;
+    let selectedCompareIds = ["deosai", "chagai", "atacama", "dry-valleys"];
+    let pkFilterState = "all";
+    let intlFilterState = "all";
+    let tableSortField = "rank";
+    let tableSortAsc = true;
+    let tableRegionFilter = "all";
+    let tableSearchQuery = "";
+
+    // -----------------------------------------------------------
+    // 4. PASM SCIENTIFIC ENGINE (GAUSSIAN ENVELOPES)
+    // -----------------------------------------------------------
+    function calculateFeatureSimilarity(val, target, tolerance) {
+      if (val === null || val === undefined || isNaN(val)) return 0;
+      const diff = (val - target) / tolerance;
+      return Math.exp(-0.5 * (diff * diff));
+    }
+
+    function recomputeAllScores() {
+      const model = PLANETARY_MODELS[currentMode];
+      const targets = model.targets;
+      const tolerances = model.tolerances;
+      const weights = activeWeights;
+      const feats = ["temp", "rain", "humidity", "sun", "slope", "relief"];
+
+      evaluatedSites = RAW_SITES.map((site) => {
+        const featureScores = {};
+        let weightedSum = 0;
+        let activeWeightSum = 0;
+
+        feats.forEach((k) => {
+          const sim = calculateFeatureSimilarity(site[k], targets[k], tolerances[k]);
+          const w = weights[k] || 0;
+          featureScores[k] = Math.round(sim * 1000) / 10;
+          if (w > 0) {
+            weightedSum += sim * w;
+            activeWeightSum += w;
+          }
+        });
+
+        const score = activeWeightSum > 0 ? Math.round((weightedSum / activeWeightSum) * 1000) / 10 : 0;
+        return {
+          ...site,
+          score,
+          featureScores
+        };
+      });
+
+      // Rank sites globally
+      evaluatedSites.sort((a, b) => b.score - a.score);
+      evaluatedSites.forEach((s, idx) => { s.rank = idx + 1; });
+
+      // Regional rank
+      let pkR = 1, intlR = 1;
+      evaluatedSites.forEach((s) => {
+        if (s.region === "Pakistan") {
+          s.regionalRank = pkR++;
+        } else {
+          s.regionalRank = intlR++;
+        }
+      });
+    }
+
+    // -----------------------------------------------------------
+    // 5. STARFIELD CANVAS ANIMATION
+    // -----------------------------------------------------------
+    function initStarfield() {
+      const canvas = document.getElementById("starfield-canvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      let w = (canvas.width = canvas.offsetWidth * window.devicePixelRatio);
+      let h = (canvas.height = canvas.offsetHeight * window.devicePixelRatio);
+
+      const N = 240;
+      const stars = Array.from({ length: N }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        z: Math.random() * 0.8 + 0.2,
+        r: Math.random() * 1.5 + 0.3,
+        tw: Math.random() * Math.PI * 2,
+      }));
+
+      let t = 0;
+      function render() {
+        t += 0.012;
+        ctx.clearRect(0, 0, w, h);
+        for (const s of stars) {
+          s.x += s.z * 0.1;
+          if (s.x > w) s.x = 0;
+          const tw = 0.55 + 0.45 * Math.sin(t * 2 + s.tw);
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r * s.z, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(215,235,255,${tw * s.z})`;
+          ctx.fill();
+        }
+        requestAnimationFrame(render);
+      }
+      render();
+
+      window.addEventListener("resize", () => {
+        w = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+        h = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+      });
+    }
+
+    // -----------------------------------------------------------
+    // 6. HERO THREE.JS ORBITALS (EARTH, MOON, MARS)
+    // -----------------------------------------------------------
+    let heroScene, heroCamera, heroRenderer;
+    let heroEarthMesh, heroMoonGroup, heroMarsGroup;
+
+    function initHeroOrbitals() {
+      const container = document.getElementById("hero-orbitals-container");
+      if (!container) return;
+
+      const w = container.offsetWidth || window.innerWidth;
+      const h = container.offsetHeight || window.innerHeight;
+
+      heroScene = new THREE.Scene();
+      heroCamera = new THREE.PerspectiveCamera(46, w / h, 0.1, 100);
+      heroCamera.position.set(0, 2.0, 7.2);
+      heroCamera.lookAt(0, 0, 0);
+
+      heroRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      heroRenderer.setSize(w, h);
+      heroRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(heroRenderer.domElement);
+
+      // Lights
+      const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+      heroScene.add(ambient);
+
+      const sunLight = new THREE.DirectionalLight(0xfff8ea, 1.8);
+      sunLight.position.set(6, 3, 5);
+      heroScene.add(sunLight);
+
+      // Texture Loader
+      const loader = new THREE.TextureLoader();
+      const earthDayTex = loader.load("https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg");
+      const moonTex = loader.load("https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg");
+      const marsTex = loader.load("https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mars_1k_color.jpg");
+
+      // Earth Mesh
+      const earthGeo = new THREE.SphereGeometry(1, 48, 48);
+      const earthMat = new THREE.MeshStandardMaterial({
+        map: earthDayTex,
+        roughness: 0.8,
+        metalness: 0.1,
+        emissive: 0x0a1830,
+        emissiveIntensity: 0.25
+      });
+      heroEarthMesh = new THREE.Mesh(earthGeo, earthMat);
+      heroScene.add(heroEarthMesh);
+
+      // Atmospheric Halo
+      const haloGeo = new THREE.SphereGeometry(1.06, 32, 32);
+      const haloMat = new THREE.MeshBasicMaterial({ color: 0x4a9eff, transparent: true, opacity: 0.12, side: THREE.BackSide });
+      heroEarthMesh.add(new THREE.Mesh(haloGeo, haloMat));
+
+      // Orbit Helper Function
+      function makeOrbitRing(r, color, tilt) {
+        const seg = 96;
+        const pts = [];
+        for (let i = 0; i <= seg; i++) {
+          const a = (i / seg) * Math.PI * 2;
+          pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r * Math.sin(tilt), Math.sin(a) * r * Math.cos(tilt)));
+        }
+        const g = new THREE.BufferGeometry().setFromPoints(pts);
+        const m = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.3 });
+        return new THREE.LineLoop(g, m);
+      }
+
+      // Moon Orbiter
+      heroScene.add(makeOrbitRing(2.2, 0x8cc6ff, 0.08));
+      heroMoonGroup = new THREE.Mesh(
+        new THREE.SphereGeometry(0.27, 32, 32),
+        new THREE.MeshStandardMaterial({ map: moonTex, roughness: 0.9 })
+      );
+      heroScene.add(heroMoonGroup);
+
+      // Mars Orbiter
+      heroScene.add(makeOrbitRing(4.2, 0xff8a5c, 0.12));
+      heroMarsGroup = new THREE.Mesh(
+        new THREE.SphereGeometry(0.52, 32, 32),
+        new THREE.MeshStandardMaterial({ map: marsTex, roughness: 0.9 })
+      );
+      heroScene.add(heroMarsGroup);
+
+      // Animate Loop
+      let clock = new THREE.Clock();
+      function animateHero() {
+        requestAnimationFrame(animateHero);
+        const dt = clock.getDelta();
+        const et = clock.getElapsedTime();
+
+        if (heroEarthMesh) heroEarthMesh.rotation.y += dt * 0.16;
+
+        // Moon Orbit
+        const tm = et * 0.55;
+        if (heroMoonGroup) {
+          heroMoonGroup.position.set(Math.cos(tm) * 2.2, Math.sin(tm) * 2.2 * Math.sin(0.08), Math.sin(tm) * 2.2 * Math.cos(0.08));
+          heroMoonGroup.rotation.y += dt * 0.1;
+        }
+
+        // Mars Orbit
+        const tr = et * 0.28;
+        if (heroMarsGroup) {
+          heroMarsGroup.position.set(Math.cos(tr) * 4.2, Math.sin(tr) * 4.2 * Math.sin(0.12), Math.sin(tr) * 4.2 * Math.cos(0.12));
+          heroMarsGroup.rotation.y += dt * 0.1;
+        }
+
+        heroRenderer.render(heroScene, heroCamera);
+      }
+      animateHero();
+
+      window.addEventListener("resize", () => {
+        const nw = container.offsetWidth || window.innerWidth;
+        const nh = container.offsetHeight || window.innerHeight;
+        heroCamera.aspect = nw / nh;
+        heroCamera.updateProjectionMatrix();
+        heroRenderer.setSize(nw, nh);
+      });
+    }
+
+    // -----------------------------------------------------------
+    // 7. MAIN 3D WEBGL EARTH GLOBE (FLOATING SPHERE)
+    // -----------------------------------------------------------
+    let globeScene, globeCamera, globeRenderer;
+    let globeEarthMesh, globeCloudsMesh;
+    let globePinsGroup;
+    let isGlobeZooming = false;
+    let globeZoomProgress = 0;
+    const GLOBE_DEFAULT_CAM = new THREE.Vector3(0, 0.6, 2.85);
+    let globeStartCam = new THREE.Vector3();
+    let globeTargetCam = new THREE.Vector3();
+    let isMouseDown = false, prevMouseX = 0, prevMouseY = 0;
+
+    function latLngToVector3(lat, lng, r) {
+      const phi = (90 - lat) * (Math.PI / 180);
+      const theta = (lng + 180) * (Math.PI / 180);
+      return new THREE.Vector3(
+        -r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta)
+      );
+    }
+
+    function init3DGlobe() {
+      const container = document.getElementById("globe-3d-canvas-container");
+      if (!container) return;
+
+      const width = container.clientWidth || 800;
+      const height = container.clientHeight || 650;
+
+      globeScene = new THREE.Scene();
+      globeCamera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
+      globeCamera.position.copy(GLOBE_DEFAULT_CAM);
+      globeCamera.lookAt(0, 0, 0);
+
+      globeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      globeRenderer.setSize(width, height);
+      globeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(globeRenderer.domElement);
+
+      // Lights
+      globeScene.add(new THREE.AmbientLight(0xffffff, 0.5));
+      const dirLight = new THREE.DirectionalLight(0xfff6e8, 2.2);
+      dirLight.position.set(4, 2, 4);
+      globeScene.add(dirLight);
+
+      const blueBack = new THREE.DirectionalLight(0x3a6aff, 0.4);
+      blueBack.position.set(-4, -1, -2);
+      globeScene.add(blueBack);
+
+      // Earth Textures
+      const loader = new THREE.TextureLoader();
+      const earthDayTex = loader.load("https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg");
+      const earthBumpTex = loader.load("https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg");
+      const earthSpecTex = loader.load("https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg");
+      const cloudsTex = loader.load("https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png");
+
+      // Earth Core Sphere
+      const earthMat = new THREE.MeshStandardMaterial({
+        map: earthDayTex,
+        bumpMap: earthBumpTex,
+        bumpScale: 0.04,
+        roughnessMap: earthSpecTex,
+        roughness: 0.78,
+        metalness: 0.05
+      });
+      globeEarthMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 64), earthMat);
+      globeScene.add(globeEarthMesh);
+
+      // Clouds Sphere
+      const cloudsMat = new THREE.MeshStandardMaterial({
+        map: cloudsTex,
+        transparent: true,
+        opacity: 0.38,
+        depthWrite: false
+      });
+      globeCloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(1.015, 48, 48), cloudsMat);
+      globeScene.add(globeCloudsMesh);
+
+      // Atmosphere Backside Halo
+      const atmoMat = new THREE.MeshBasicMaterial({ color: 0x5aa9ff, transparent: true, opacity: 0.09, side: THREE.BackSide });
+      globeScene.add(new THREE.Mesh(new THREE.SphereGeometry(1.18, 32, 32), atmoMat));
+
+      // Group holding pins
+      globePinsGroup = new THREE.Group();
+      globeScene.add(globePinsGroup);
+
+      renderGlobePins();
+
+      // Mouse drag rotation controls
+      container.addEventListener("mousedown", (e) => {
+        isMouseDown = true;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+      });
+      window.addEventListener("mouseup", () => { isMouseDown = false; });
+      window.addEventListener("mousemove", (e) => {
+        if (!isMouseDown) return;
+        const dx = e.clientX - prevMouseX;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+
+        if (globeEarthMesh) globeEarthMesh.rotation.y += dx * 0.005;
+        if (globeCloudsMesh) globeCloudsMesh.rotation.y += dx * 0.006;
+        if (globePinsGroup) globePinsGroup.rotation.y += dx * 0.005;
+      });
+
+      // Raycaster for Pin Clicks
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+
+      container.addEventListener("click", (e) => {
+        const rect = container.getBoundingClientRect();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, globeCamera);
+        const intersects = raycaster.intersectObjects(globePinsGroup.children, true);
+        if (intersects.length > 0) {
+          let obj = intersects[0].object;
+          while (obj && !obj.userData.site) {
+            obj = obj.parent;
+          }
+          if (obj && obj.userData.site) {
+            flyGlobeToSite(obj.userData.site);
+          }
+        }
+      });
+
+      // Globe Animation Loop
+      let clock = new THREE.Clock();
+      function animateGlobe() {
+        requestAnimationFrame(animateGlobe);
+        const dt = clock.getDelta();
+        const et = clock.getElapsedTime();
+
+        // Idle slow rotation when not zooming and not viewing a modal
+        if (!isGlobeZooming && !isMouseDown && !activeModalSite) {
+          if (globeEarthMesh) globeEarthMesh.rotation.y += dt * 0.035;
+          if (globeCloudsMesh) globeCloudsMesh.rotation.y += dt * 0.048;
+          if (globePinsGroup) globePinsGroup.rotation.y += dt * 0.035;
+        }
+
+        // Pin pulse scaling
+        if (globePinsGroup) {
+          globePinsGroup.children.forEach((pinGroup) => {
+            const ring = pinGroup.getObjectByName("haloRing");
+            if (ring) {
+              const scale = 1 + 0.45 * Math.sin(et * 3.5 + (pinGroup.userData.site?.lat || 0));
+              ring.scale.set(scale, scale, scale);
+            }
+          });
+        }
+
+        // Camera flight interpolation (smooth zoom in / zoom out)
+        if (isGlobeZooming) {
+          globeZoomProgress = Math.min(1, globeZoomProgress + 0.016);
+          const p = globeZoomProgress < 0.5 ? 4 * globeZoomProgress * globeZoomProgress * globeZoomProgress : 1 - Math.pow(-2 * globeZoomProgress + 2, 3) / 2;
+          globeCamera.position.lerpVectors(globeStartCam, globeTargetCam, p);
+          globeCamera.lookAt(0, 0, 0);
+
+          if (globeZoomProgress >= 1) {
+            isGlobeZooming = false;
+          }
+        }
+
+        globeRenderer.render(globeScene, globeCamera);
+      }
+      animateGlobe();
+
+      window.addEventListener("resize", () => {
+        const nw = container.clientWidth || 800;
+        const nh = container.clientHeight || 650;
+        globeCamera.aspect = nw / nh;
+        globeCamera.updateProjectionMatrix();
+        globeRenderer.setSize(nw, nh);
+      });
+    }
+
+    function renderGlobePins() {
+      if (!globePinsGroup) return;
+      while (globePinsGroup.children.length > 0) {
+        globePinsGroup.remove(globePinsGroup.children[0]);
+      }
+
+      const isMars = currentMode === "mars";
+      const defaultPinColor = isMars ? 0xff4732 : 0x7fdfff;
+
+      // Filter sites according to globe controls
+      const visibleSites = evaluatedSites.filter((s) => {
+        if (globeRegionFilter === "pakistan" && s.region !== "Pakistan") return false;
+        if (globeRegionFilter === "international" && s.region !== "International") return false;
+        if (s.elevation < globeMinElev) return false;
+        if (globeSearchQuery.trim()) {
+          const q = globeSearchQuery.toLowerCase();
+          return s.name.toLowerCase().includes(q) || s.country.toLowerCase().includes(q);
+        }
+        return true;
+      });
+
+      visibleSites.forEach((site) => {
+        const isPk = site.region === "Pakistan";
+        const pinColor = isPk ? 0x34d399 : defaultPinColor;
+        const pos = latLngToVector3(site.lat, site.lng, 1.018);
+
+        const group = new THREE.Group();
+        group.position.copy(pos);
+        group.userData = { site };
+
+        // Central click-target sphere
+        const core = new THREE.Mesh(
+          new THREE.SphereGeometry(0.018, 16, 16),
+          new THREE.MeshBasicMaterial({ color: pinColor })
+        );
+        core.userData = { site };
+        group.add(core);
+
+        // Pulsing halo ring
+        const ring = new THREE.Mesh(
+          new THREE.SphereGeometry(0.028, 16, 16),
+          new THREE.MeshBasicMaterial({ color: pinColor, transparent: true, opacity: 0.35 })
+        );
+        ring.name = "haloRing";
+        ring.userData = { site };
+        group.add(ring);
+
+        globePinsGroup.add(group);
+      });
+
+      // Update badge
+      const badge = document.getElementById("globe-count-badge");
+      if (badge) badge.innerText = `Showing ${visibleSites.length} of ${RAW_SITES.length} Sites`;
+    }
+
+    function flyGlobeToSite(site) {
+      if (!site) return;
+      const overviewEl = document.getElementById("overview-page");
+      if (!overviewEl || overviewEl.classList.contains("hidden")) {
+        switchPage("globe");
+      } else {
+        document.getElementById("globe-section")?.scrollIntoView({ behavior: "smooth" });
+        updateNavTabsUI("globe");
+      }
+      setTimeout(() => {
+        const currentRotY = globePinsGroup ? globePinsGroup.rotation.y : 0;
+        const targetPos = latLngToVector3(site.lat, site.lng, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), currentRotY);
+        const dir = targetPos.clone().normalize();
+
+        globeStartCam.copy(globeCamera.position);
+        globeTargetCam.copy(dir.multiplyScalar(1.85)); // zoom in close
+        isGlobeZooming = true;
+        globeZoomProgress = 0;
+
+        // Open location dossier modal shortly after flight begins
+        setTimeout(() => {
+          openLocationModal(site);
+        }, 750);
+      }, 150);
+    }
+
+    function zoomGlobeOut() {
+      if (!globeCamera) return;
+      globeStartCam.copy(globeCamera.position);
+      globeTargetCam.copy(GLOBE_DEFAULT_CAM);
+      isGlobeZooming = true;
+      globeZoomProgress = 0;
+    }
+
+    // -----------------------------------------------------------
+    // 8. LOCATION DOSSIER MODAL WITH DEM SCAN & TRANSECT
+    // -----------------------------------------------------------
+    let activeModalSite = null;
+
+    function openLocationModal(site) {
+      activeModalSite = site;
+      const backdrop = document.getElementById("location-modal-backdrop");
+      if (!backdrop) return;
+
+      const isPk = site.region === "Pakistan";
+      const isMars = currentMode === "mars";
+      const model = PLANETARY_MODELS[currentMode];
+
+      // Badges
+      const rBadge = document.getElementById("modal-region-badge");
+      rBadge.innerText = isPk ? "Pakistan Candidate Site" : site.country;
+      rBadge.style.background = isPk ? "rgba(16,185,129,0.2)" : "rgba(59,130,246,0.2)";
+      rBadge.style.color = isPk ? "#34D399" : "#60A5FA";
+      rBadge.style.border = isPk ? "1px solid rgba(52,211,153,0.4)" : "1px solid rgba(96,165,250,0.4)";
+
+      document.getElementById("modal-tier-badge").innerText = site.category;
+      document.getElementById("modal-affinity-badge").innerText = `${site.targetAffinity} Analog`;
+      document.getElementById("modal-rank-badge").innerText = `Global Rank #${site.rank}`;
+
+      document.getElementById("modal-site-title").innerText = site.name;
+      document.getElementById("modal-coords-subtitle").innerText = `Coordinates: ${site.lat.toFixed(2)}°N, ${site.lng.toFixed(2)}°E • ASTER Elevation: ${site.elevation.toFixed(0)} m`;
+
+      // Quick Tiles
+      document.getElementById("modal-tile-temp").innerText = `${site.temp.toFixed(1)}°C`;
+      document.getElementById("modal-tile-rain").innerText = `${site.rain.toFixed(2)} mm`;
+      document.getElementById("modal-tile-slope").innerText = `${site.slope.toFixed(1)}°`;
+
+      // Scientific texts
+      document.getElementById("modal-scientific-reason").innerText = site.scientificReason;
+      document.getElementById("modal-geological-summary").innerText = site.geologicalSummary;
+      document.getElementById("modal-citation").innerText = `Reference: ${site.citation}`;
+
+      // Feature tags
+      const featBox = document.getElementById("modal-features-tags");
+      featBox.innerHTML = site.primaryFeatures
+        .map((f) => `<span class="px-2.5 py-1 rounded-md text-[11px] font-medium bg-white/5 border border-white/10 text-white/80">${f}</span>`)
+        .join("");
+
+      // Score gauge
+      const circ = 201; // 2 * PI * 32
+      const offset = circ * (1 - (site.score || 0) / 100);
+      document.getElementById("modal-gauge-circle").style.strokeDashoffset = offset;
+      document.getElementById("modal-score-text").innerHTML = `${site.score?.toFixed(1)}% <span class="text-sm font-normal text-white/50">/ 100%</span>`;
+
+      // Breakdown bars
+      const paramList = [
+        { label: "Ambient Temperature", key: "temp", val: site.temp, target: model.targets.temp, unit: "°C" },
+        { label: "Liquid Precipitation (Aridity)", key: "rain", val: site.rain, target: model.targets.rain, unit: "mm/d" },
+        { label: "Relative Humidity (Dry Air)", key: "humidity", val: site.humidity, target: model.targets.humidity, unit: "%" },
+        { label: "Solar Insolation Incident", key: "sun", val: site.sun, target: model.targets.sun, unit: "kWh/m²" },
+        { label: "Terrain Slope (ASTER DEM)", key: "slope", val: site.slope, target: model.targets.slope, unit: "°" },
+        { label: "Local Topographical Relief", key: "relief", val: site.relief, target: model.targets.relief, unit: "m" },
+      ];
+
+      const barsContainer = document.getElementById("modal-breakdown-bars");
+      barsContainer.innerHTML = paramList
+        .map((p) => {
+          const matchPct = site.featureScores?.[p.key] || 0;
+          const delta = p.val - p.target;
+          const deltaFmt = delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1);
+
+          return `
+            <div class="rounded-xl p-2.5 bg-white/[0.02] border border-white/5">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-white/70 font-medium">${p.label}</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] font-mono text-white/40">${p.val} ${p.unit} (Δ ${deltaFmt})</span>
+                  <span class="text-xs font-bold font-mono" style="color: var(--color-accent);">${matchPct.toFixed(1)}%</span>
+                </div>
+              </div>
+              <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div class="h-full rounded-full" style="width: ${matchPct}%; background: var(--color-accent); box-shadow: 0 0 8px var(--color-accent-glow); transition: width 0.6s ease;"></div>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+
+      // Render DEM Topo Map & Transect in SVG
+      renderModalTopoMap(site);
+
+      backdrop.classList.remove("hidden");
+      backdrop.classList.add("flex");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeLocationModal() {
+      const backdrop = document.getElementById("location-modal-backdrop");
+      if (backdrop) {
+        backdrop.classList.add("hidden");
+        backdrop.classList.remove("flex");
+      }
+      document.body.style.overflow = "";
+      activeModalSite = null;
+      zoomGlobeOut();
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && activeModalSite) {
+        closeLocationModal();
+      }
+    });
+
+    function renderModalTopoMap(site) {
+      const svg = document.getElementById("modal-topo-svg");
+      if (!svg) return;
+      svg.innerHTML = "";
+
+      const size = 20;
+      const cell = 100 / size;
+
+      // Deterministic synthetic heightmap using site slope & relief
+      let seed = (Math.abs(site.lat) * 1000 + Math.abs(site.lng) * 10) | 0;
+      function rnd() {
+        seed = (seed * 1664525 + 1013904223) >>> 0;
+        return (seed & 0xffff) / 0xffff;
+      }
+
+      const transectData = [];
+      const midRow = Math.floor(size / 2);
+
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          const cx = (j - size / 2) / (size / 2);
+          const cy = (i - size / 2) / (size / 2);
+          const d = Math.sqrt(cx * cx + cy * cy);
+          const h = Math.max(0.05, Math.min(0.95, (1 - d * 0.6) * 0.5 + rnd() * 0.45));
+
+          if (i === midRow) {
+            transectData.push(h);
+          }
+
+          // Shading: dark blue to accent
+          const shade = Math.round(15 + h * 60);
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", `${j * cell}`);
+          rect.setAttribute("y", `${i * cell}`);
+          rect.setAttribute("width", `${cell + 0.3}`);
+          rect.setAttribute("height", `${cell + 0.3}`);
+          rect.setAttribute("fill", `rgb(${Math.round(shade * 0.4)}, ${Math.round(shade * 0.7)}, ${shade})`);
+          svg.appendChild(rect);
+        }
+      }
+
+      // Contour rings
+      [0.3, 0.5, 0.7].forEach((lvl) => {
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", "50");
+        circle.setAttribute("cy", "50");
+        circle.setAttribute("r", `${(1 - lvl) * 40}`);
+        circle.setAttribute("fill", "none");
+        circle.setAttribute("stroke", "rgba(255,255,255,0.22)");
+        circle.setAttribute("stroke-width", "0.4");
+        circle.setAttribute("stroke-dasharray", "1 1");
+        svg.appendChild(circle);
+      });
+
+      // Center crosshair
+      const centerPin = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      centerPin.setAttribute("cx", "50");
+      centerPin.setAttribute("cy", "50");
+      centerPin.setAttribute("r", "1.6");
+      centerPin.setAttribute("fill", "var(--color-accent)");
+      svg.appendChild(centerPin);
+
+      // Transect SVG
+      const tLine = document.getElementById("modal-transect-line");
+      const tArea = document.getElementById("modal-transect-area");
+      const step = 100 / (transectData.length - 1);
+      const points = transectData.map((v, idx) => {
+        const x = idx * step;
+        const y = 85 - v * 70;
+        return `${idx === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
+      }).join(" ");
+
+      tLine.setAttribute("d", points);
+      tArea.setAttribute("d", `${points} L 100 100 L 0 100 Z`);
+    }
+
+    // -----------------------------------------------------------
+    // 9. HUD UI RENDERING & SYNCHRONIZATION
+    // -----------------------------------------------------------
+    function updateHUD() {
+      recomputeAllScores();
+
+      const isMars = currentMode === "mars";
+      const model = PLANETARY_MODELS[currentMode];
+      const accent = isMars ? "#ff6b35" : "#7fdfff";
+
+      // 1. Header Mode Buttons
+      const btnMoon = document.getElementById("btn-mode-moon");
+      const btnMars = document.getElementById("btn-mode-mars");
+      if (btnMoon && btnMars) {
+        if (!isMars) {
+          btnMoon.style.background = "var(--color-accent-soft)";
+          btnMoon.style.color = "var(--color-accent)";
+          btnMoon.style.boxShadow = "0 0 16px -2px var(--color-accent-glow)";
+          btnMars.style.background = "transparent";
+          btnMars.style.color = "rgba(255,255,255,0.5)";
+          btnMars.style.boxShadow = "none";
+        } else {
+          btnMars.style.background = "var(--color-accent-soft)";
+          btnMars.style.color = "var(--color-accent)";
+          btnMars.style.boxShadow = "0 0 16px -2px var(--color-accent-glow)";
+          btnMoon.style.background = "transparent";
+          btnMoon.style.color = "rgba(255,255,255,0.5)";
+          btnMoon.style.boxShadow = "none";
+        }
+      }
+
+      document.getElementById("active-mode-badge").innerText = isMars ? "Mars Surface" : "Artemis Moon";
+
+      // 2. Hero Section Sync
+      document.getElementById("hero-pasm-tag").innerText = isMars
+        ? "Planetary Analog Similarity Model (PASM) • Martian Surface"
+        : "Planetary Analog Similarity Model (PASM) • Lunar Artemis Polar";
+
+      const bestPk = evaluatedSites.filter((s) => s.region === "Pakistan")[0];
+      const bestIntl = evaluatedSites.filter((s) => s.region === "International")[0];
+
+      if (bestPk) {
+        document.getElementById("kpi-best-pk").innerText = bestPk.name.split("(")[0].trim();
+        document.getElementById("kpi-best-pk-score").innerText = `${bestPk.score?.toFixed(1)}% Similarity`;
+      }
+      if (bestIntl) {
+        document.getElementById("kpi-best-intl").innerText = bestIntl.name.split("(")[0].trim();
+        document.getElementById("kpi-best-intl-score").innerText = `${bestIntl.score?.toFixed(1)}% Similarity`;
+      }
+
+      // 3. Globe HUD Specs (if rendered)
+      const gTitle = document.getElementById("globe-target-title");
+      if (gTitle) gTitle.innerText = isMars ? "Martian Surface Target" : "Lunar Artemis Target";
+      const gName = document.getElementById("globe-target-name");
+      if (gName) gName.innerText = model.shortName;
+      const gDesc = document.getElementById("globe-target-desc");
+      if (gDesc) gDesc.innerText = model.description;
+
+      const specBox = document.getElementById("globe-target-specs");
+      if (specBox) {
+        specBox.innerHTML = `
+          <div class="flex justify-between py-1 border-b border-white/5"><span class="text-white/50">Target Temp:</span><span class="text-white font-bold">${model.targets.temp} °C</span></div>
+          <div class="flex justify-between py-1 border-b border-white/5"><span class="text-white/50">Precipitation:</span><span class="text-white font-bold">${model.targets.rain} mm/d (Zero)</span></div>
+          <div class="flex justify-between py-1 border-b border-white/5"><span class="text-white/50">Rel Humidity:</span><span class="text-white font-bold">${model.targets.humidity} %</span></div>
+          <div class="flex justify-between py-1 border-b border-white/5"><span class="text-white/50">Daily Solar:</span><span class="text-white font-bold">${model.targets.sun} kWh/m²</span></div>
+          <div class="flex justify-between py-1"><span class="text-white/50">Terrain Slope:</span><span class="text-white font-bold">${model.targets.slope} ° (Relief ${model.targets.relief}m)</span></div>
+        `;
+      }
+
+      // 4. Globe Leaderboard (if rendered)
+      const leadList = document.getElementById("globe-leaderboard-list");
+      if (leadList) {
+        const top5 = evaluatedSites.slice(0, 5);
+        leadList.innerHTML = top5
+          .map((s, idx) => `
+            <div onclick="flyGlobeToSite(evaluatedSites.find(x => x.id === '${s.id}'))" class="group flex items-center justify-between p-2 rounded-xl cursor-pointer hover:bg-white/10 transition-all border border-white/5 bg-white/[0.02]">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${idx === 0 ? "bg-cyan-400 text-black" : "bg-white/10 text-white"}">${idx + 1}</span>
+                <div class="min-w-0">
+                  <div class="text-xs font-semibold text-white truncate group-hover:text-cyan-300 transition-colors">${s.name}</div>
+                  <div class="text-[10px] text-white/40">${s.country} ${s.region === "Pakistan" ? "• <span class='text-emerald-400'>PK</span>" : ""}</div>
+                </div>
+              </div>
+              <div class="text-xs font-bold font-mono" style="color: var(--color-accent);">${s.score?.toFixed(1)}%</div>
+            </div>
+          `)
+          .join("");
+      }
+
+      // 5. Globe Fast Ribbon (if rendered)
+      const ribbon = document.getElementById("globe-ribbon-container");
+      if (ribbon) {
+        ribbon.innerHTML = evaluatedSites
+          .map((s) => `
+            <button onclick="flyGlobeToSite(evaluatedSites.find(x => x.id === '${s.id}'))" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs bg-white/[0.03] border border-white/10 hover:border-cyan-400/50 hover:scale-105 transition-all">
+              <span class="w-2 h-2 rounded-full ${s.region === "Pakistan" ? "bg-emerald-400" : "bg-cyan-400"}"></span>
+              <span class="text-white/80 font-medium">${s.name}</span>
+              <span class="font-mono text-[11px]" style="color: var(--color-accent);">${s.score?.toFixed(0)}%</span>
+            </button>
+          `)
+          .join("");
+      }
+
+      // 6. Pakistan Cards Grid
+      renderPakistanCards();
+
+      // 7. Global Cards Grid
+      renderGlobalCards();
+
+      // 8. Radar Comparison
+      renderCompareSection();
+
+      // 9. Weights Sliders
+      renderWeightsSliders();
+
+      // 10. Telemetry Table
+      renderTelemetryTable();
+
+      // Refresh 3D pins on the globe
+      renderGlobePins();
+    }
+
+    function setPlanetaryMode(mode) {
+      currentMode = mode;
+      activeWeights = { ...PLANETARY_MODELS[mode].defaultWeights };
+
+      const root = document.documentElement;
+      if (mode === "mars") {
+        root.classList.add("theme-mars");
+      } else {
+        root.classList.remove("theme-mars");
+      }
+
+      // Update atmospheric glow
+      const heroGlow = document.getElementById("hero-glow-overlay");
+      if (heroGlow) {
+        heroGlow.style.background = mode === "mars"
+          ? "radial-gradient(ellipse at 75% 45%, rgba(255,71,50,0.22), transparent 65%), radial-gradient(ellipse at 20% 80%, rgba(120,35,18,0.28), transparent 60%)"
+          : "radial-gradient(ellipse at 75% 45%, rgba(127,223,255,0.18), transparent 65%), radial-gradient(ellipse at 20% 80%, rgba(20,50,90,0.2), transparent 60%)";
+      }
+
+      const globeSec = document.getElementById("globe-section");
+      if (globeSec) {
+        globeSec.style.backgroundImage = mode === "mars"
+          ? "radial-gradient(ellipse at 50% 50%, rgba(65, 22, 14, 0.6), #090405 82%)"
+          : "radial-gradient(ellipse at 50% 50%, rgba(15,25,50,0.5), #05070D 80%)";
+      }
+
+      updateHUD();
+      if (typeof updateNavTabsUI === "function") {
+        updateNavTabsUI(currentPage);
+      }
+    }
+
+    // -----------------------------------------------------------
+    // 10. PAKISTAN EXPLORER RENDERING
+    // -----------------------------------------------------------
+    function renderPakistanCards() {
+      const grid = document.getElementById("pk-cards-grid");
+      if (!grid) return;
+
+      const pkList = evaluatedSites.filter((s) => {
+        if (s.region !== "Pakistan") return false;
+        if (pkFilterState === "all") return true;
+        const text = (s.scientificReason + s.geologicalSummary + s.citation).toLowerCase();
+        if (pkFilterState === "balochistan") {
+          return text.includes("balochistan") || ["chagai", "kharan", "gwadar", "hingol", "quetta", "nok kundi"].some((k) => s.name.toLowerCase().includes(k));
+        }
+        if (pkFilterState === "gb") {
+          return text.includes("karakoram") || ["deosai", "skardu", "hunza", "khunjerab"].some((k) => s.name.toLowerCase().includes(k));
+        }
+        if (pkFilterState === "sindh") {
+          return text.includes("sindh") || ["thar", "nara", "kirthar"].some((k) => s.name.toLowerCase().includes(k));
+        }
+        if (pkFilterState === "punjab") {
+          return text.includes("punjab") || ["cholistan", "salt range"].some((k) => s.name.toLowerCase().includes(k));
+        }
+        return true;
+      });
+
+      grid.innerHTML = pkList
+        .map((s) => `
+          <div class="group rounded-2xl p-5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl flex flex-col justify-between" style="background: var(--color-surface); border: 1px solid rgba(52,211,153,0.3);">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 font-mono">
+                  PK Rank #${s.regionalRank}
+                </span>
+                <span class="text-xs font-bold font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  ${s.score?.toFixed(1)}% Match
+                </span>
+              </div>
+
+              <h3 class="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">${s.name}</h3>
+              <div class="text-xs text-white/45 flex items-center gap-2 mt-0.5 mb-3 font-mono">
+                <span>${s.lat.toFixed(2)}°N, ${s.lng.toFixed(2)}°E</span> • <span>${s.elevation.toFixed(0)}m</span>
+              </div>
+
+              <p class="text-xs text-white/70 leading-relaxed mb-4 line-clamp-3">${s.scientificReason}</p>
+
+              <div class="flex flex-wrap gap-1 mb-4">
+                ${s.primaryFeatures.slice(0, 3).map((f) => `<span class="text-[10px] px-2 py-0.5 rounded bg-black/40 border border-white/5 text-white/60">${f}</span>`).join("")}
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 py-2 px-3 rounded-xl bg-black/30 border border-white/5 text-[11px] mb-4 font-mono">
+                <div class="text-cyan-300 font-semibold">${s.temp.toFixed(1)}°C</div>
+                <div class="text-blue-300 font-semibold">${s.rain.toFixed(2)} mm</div>
+                <div class="text-amber-300 font-semibold">${s.slope.toFixed(1)}°</div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-2 border-t border-white/10">
+              <button onclick="openLocationModal(evaluatedSites.find(x => x.id === '${s.id}'))" class="flex-1 py-2 rounded-xl text-xs font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/15 transition-all">
+                View Full Dossier
+              </button>
+              <button onclick="flyGlobeToSite(evaluatedSites.find(x => x.id === '${s.id}'))" title="Fly to location on 3D Globe" class="p-2 rounded-xl text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/30">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9" stroke-width="2"/></svg>
+              </button>
+            </div>
+          </div>
+        `)
+        .join("");
+    }
+
+    function setPkFilter(f) {
+      pkFilterState = f;
+      ["all", "balochistan", "gb", "sindh", "punjab"].forEach((id) => {
+        const btn = document.getElementById(`pk-flt-${id}`);
+        if (btn) {
+          if (id === f) {
+            btn.className = "px-3 py-1.5 rounded-lg font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+          } else {
+            btn.className = "px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white";
+          }
+        }
+      });
+      renderPakistanCards();
+    }
+
+    // -----------------------------------------------------------
+    // 11. GLOBAL EXPLORER RENDERING
+    // -----------------------------------------------------------
+    function renderGlobalCards() {
+      const grid = document.getElementById("intl-cards-grid");
+      if (!grid) return;
+
+      const intlList = evaluatedSites.filter((s) => {
+        if (s.region !== "International") return false;
+        if (intlFilterState === "all") return true;
+        if (intlFilterState === "nasa") return s.category === "NASA Documented";
+        if (intlFilterState === "mars") return s.targetAffinity === "Mars" || s.targetAffinity === "Both";
+        if (intlFilterState === "moon") return s.targetAffinity === "Moon" || s.targetAffinity === "Both";
+        return true;
+      });
+
+      grid.innerHTML = intlList
+        .map((s) => {
+          const isNasa = s.category === "NASA Documented";
+          return `
+            <div class="group rounded-2xl p-5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl flex flex-col justify-between" style="background: var(--color-surface); border: 1px solid var(--color-border);">
+              <div>
+                <div class="flex items-center justify-between gap-2 mb-3">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono ${isNasa ? "text-blue-300 bg-blue-950/60 border border-blue-500/40" : "text-white/70 bg-white/5 border border-white/10"}">
+                    ${isNasa ? "NASA Documented" : "Literature Supported"}
+                  </span>
+                  <span class="text-xs font-bold font-mono px-2.5 py-0.5 rounded-full" style="background: var(--color-accent-soft); color: var(--color-accent); border: 1px solid var(--color-border);">
+                    ${s.score?.toFixed(1)}% Match
+                  </span>
+                </div>
+
+                <h3 class="text-xl font-bold text-white group-hover:text-cyan-300 transition-colors">${s.name}</h3>
+                <div class="text-xs text-white/45 flex items-center gap-2 mt-0.5 mb-3 font-mono">
+                  <span>${s.country}</span> • <span>${s.lat.toFixed(2)}°, ${s.lng.toFixed(2)}°</span> • <span>${s.elevation.toFixed(0)}m</span>
+                </div>
+
+                <p class="text-xs text-white/70 leading-relaxed mb-4 line-clamp-3">${s.scientificReason}</p>
+
+                <div class="flex flex-wrap gap-1 mb-4">
+                  ${s.primaryFeatures.slice(0, 3).map((f) => `<span class="text-[10px] px-2 py-0.5 rounded bg-black/40 border border-white/5 text-white/60">${f}</span>`).join("")}
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 py-2 px-3 rounded-xl bg-black/30 border border-white/5 text-[11px] mb-4 font-mono">
+                  <div class="text-cyan-300 font-semibold">${s.temp.toFixed(1)}°C</div>
+                  <div class="text-blue-300 font-semibold">${s.rain.toFixed(2)} mm</div>
+                  <div class="text-amber-300 font-semibold">${s.slope.toFixed(1)}°</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 pt-2 border-t border-white/10">
+                <button onclick="openLocationModal(evaluatedSites.find(x => x.id === '${s.id}'))" class="flex-1 py-2 rounded-xl text-xs font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/15 transition-all">
+                  View Full Dossier
+                </button>
+                <button onclick="flyGlobeToSite(evaluatedSites.find(x => x.id === '${s.id}'))" title="Fly to on 3D Globe" class="p-2 rounded-xl text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-500/30">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-width="2" d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                </button>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    function setIntlFilter(f) {
+      intlFilterState = f;
+      ["all", "nasa", "mars", "moon"].forEach((id) => {
+        const btn = document.getElementById(`intl-flt-${id}`);
+        if (btn) {
+          if (id === f) {
+            btn.className = "px-3 py-1.5 rounded-lg font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40";
+          } else {
+            btn.className = "px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white";
+          }
+        }
+      });
+      renderGlobalCards();
+    }
+
+    // -----------------------------------------------------------
+    // 12. MULTI-SITE RADAR & DELTA MATRIX
+    // -----------------------------------------------------------
+    const RADAR_PALETTE_MOON = ["#7FDFFF", "#38BDF8", "#34D399", "#A78BFA"];
+    const RADAR_PALETTE_MARS = ["#FF4732", "#F59E0B", "#FB7185", "#34D399"];
+
+    function renderCompareSection() {
+      const RADAR_PALETTE = currentMode === "mars" ? RADAR_PALETTE_MARS : RADAR_PALETTE_MOON;
+
+      // Comparison Pills
+      const pillsContainer = document.getElementById("compare-pills-container");
+      if (pillsContainer) {
+        pillsContainer.innerHTML = evaluatedSites
+          .map((s) => {
+            const isSel = selectedCompareIds.includes(s.id);
+            return `
+              <button onclick="toggleCompareSite('${s.id}')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isSel ? "bg-cyan-500/20 text-white border border-cyan-400 font-semibold" : "bg-white/5 text-white/60 hover:text-white border border-white/10"
+              }">
+                <span class="w-2 h-2 rounded-full ${s.region === "Pakistan" ? "bg-emerald-400" : "bg-cyan-400"}"></span>
+                <span>${s.name}</span>
+                <span class="ml-1 text-[10px]">${isSel ? "✕" : "+"}</span>
+              </button>
+            `;
+          })
+          .join("");
+      }
+
+      const activeList = evaluatedSites.filter((s) => selectedCompareIds.includes(s.id)).slice(0, 4);
+      document.getElementById("compare-count").innerText = activeList.length;
+
+      // Render SVG Radar
+      const svg = document.getElementById("radar-svg");
+      if (svg) {
+        const center = 140;
+        const radius = 105;
+        const feats = [
+          { key: "temp", label: "Temperature" },
+          { key: "rain", label: "Aridity" },
+          { key: "humidity", label: "Dry Air" },
+          { key: "sun", label: "Solar" },
+          { key: "slope", label: "Slope" },
+          { key: "relief", label: "Relief" },
+        ];
+
+        function getPt(val, i) {
+          const a = (i / feats.length) * Math.PI * 2 - Math.PI / 2;
+          const r = (val / 100) * radius;
+          return { x: center + r * Math.cos(a), y: center + r * Math.sin(a) };
+        }
+
+        let svgHtml = "";
+
+        // Concentric Rings
+        [25, 50, 75, 100].forEach((ring) => {
+          const pts = feats.map((_, i) => { const c = getPt(ring, i); return `${c.x},${c.y}`; }).join(" ");
+          svgHtml += `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+        });
+
+        // Axis Spokes
+        feats.forEach((_, i) => {
+          const c = getPt(100, i);
+          svgHtml += `<line x1="${center}" y1="${center}" x2="${c.x}" y2="${c.y}" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>`;
+        });
+
+        // White Dashed Target Boundary
+        const tgtPts = feats.map((_, i) => { const c = getPt(100, i); return `${c.x},${c.y}`; }).join(" ");
+        svgHtml += `<polygon points="${tgtPts}" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.8"/>`;
+
+        // Candidate Site Polygons
+        activeList.forEach((site, sIdx) => {
+          const color = RADAR_PALETTE[sIdx % RADAR_PALETTE.length];
+          const pts = feats.map((f, i) => {
+            const v = site.featureScores?.[f.key] || 0;
+            const c = getPt(v, i);
+            return `${c.x},${c.y}`;
+          }).join(" ");
+
+          svgHtml += `<polygon points="${pts}" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="2"/>`;
+          feats.forEach((f, i) => {
+            const v = site.featureScores?.[f.key] || 0;
+            const c = getPt(v, i);
+            svgHtml += `<circle cx="${c.x}" cy="${c.y}" r="3" fill="${color}"/>`;
+          });
+        });
+
+        // Labels
+        feats.forEach((f, i) => {
+          const c = getPt(116, i);
+          svgHtml += `<text x="${c.x}" y="${c.y + 3}" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9" font-family="monospace">${f.label}</text>`;
+        });
+
+        svg.innerHTML = svgHtml;
+      }
+
+      // Legend
+      const legend = document.getElementById("radar-legend");
+      if (legend) {
+        legend.innerHTML = `
+          <div class="flex items-center gap-1.5 text-white/80">
+            <span class="w-3 h-0.5 border-t-2 border-dashed border-white"></span>
+            <span>Target Baseline</span>
+          </div>
+          ${activeList.map((s, idx) => `
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full" style="background: ${RADAR_PALETTE[idx % RADAR_PALETTE.length]};"></span>
+              <span class="text-white font-medium">${s.name}</span>
+            </div>
+          `).join("")}
+        `;
+      }
+
+      // Right Side Match Bars
+      const barsList = document.getElementById("compare-bars-list");
+      if (barsList) {
+        barsList.innerHTML = activeList
+          .map((s, idx) => {
+            const color = RADAR_PALETTE[idx % RADAR_PALETTE.length];
+            return `
+              <div class="space-y-1.5">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="font-semibold text-white flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full" style="background: ${color};"></span>
+                    ${s.name} (${s.region})
+                  </span>
+                  <span class="font-mono font-bold" style="color: ${color};">${s.score?.toFixed(1)}%</span>
+                </div>
+                <div class="h-2.5 rounded-full bg-white/10 overflow-hidden">
+                  <div class="h-full rounded-full" style="width: ${s.score}%; background: ${color}; box-shadow: 0 0 10px ${color}66; transition: width 0.6s ease;"></div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      // Delta Matrix Table
+      const target = PLANETARY_MODELS[currentMode].targets;
+      const head = document.getElementById("delta-matrix-head");
+      head.innerHTML = `
+        <th class="py-2.5 px-3">Location</th>
+        <th class="py-2.5 px-3">Region</th>
+        <th class="py-2.5 px-3">Score</th>
+        <th class="py-2.5 px-3">Temp (T: ${target.temp}°C)</th>
+        <th class="py-2.5 px-3">Rain (T: ${target.rain}mm)</th>
+        <th class="py-2.5 px-3">RH (T: ${target.humidity}%)</th>
+        <th class="py-2.5 px-3">Solar (T: ${target.sun}kWh)</th>
+        <th class="py-2.5 px-3">Slope (T: ${target.slope}°)</th>
+      `;
+
+      const tbody = document.getElementById("delta-matrix-body");
+      tbody.innerHTML = activeList
+        .map((s, idx) => {
+          const color = RADAR_PALETTE[idx % RADAR_PALETTE.length];
+          return `
+            <tr class="hover:bg-white/[0.02]">
+              <td class="py-3 px-3 font-semibold text-white flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full" style="background: ${color};"></span>
+                ${s.name}
+              </td>
+              <td class="py-3 px-3 text-white/60 font-sans">${s.region}</td>
+              <td class="py-3 px-3 font-bold" style="color: ${color};">${s.score?.toFixed(1)}%</td>
+              <td class="py-3 px-3 text-white/80">${s.temp.toFixed(1)}°C <span class="text-[10px] text-white/40">(Δ ${(s.temp - target.temp).toFixed(1)})</span></td>
+              <td class="py-3 px-3 text-white/80">${s.rain.toFixed(2)} mm <span class="text-[10px] text-white/40">(Δ ${(s.rain - target.rain).toFixed(2)})</span></td>
+              <td class="py-3 px-3 text-white/80">${s.humidity.toFixed(0)}%</td>
+              <td class="py-3 px-3 text-white/80">${s.sun.toFixed(2)} kWh</td>
+              <td class="py-3 px-3 text-white/80">${s.slope.toFixed(1)}°</td>
+            </tr>
+          `;
+        })
+        .join("");
+    }
+
+    function toggleCompareSite(id) {
+      if (selectedCompareIds.includes(id)) {
+        if (selectedCompareIds.length > 1) {
+          selectedCompareIds = selectedCompareIds.filter((x) => x !== id);
+        }
+      } else {
+        if (selectedCompareIds.length < 4) {
+          selectedCompareIds.push(id);
+        }
+      }
+      renderCompareSection();
+    }
+
+    // -----------------------------------------------------------
+    // 13. SCIENTIFIC WEIGHT SLIDERS
+    // -----------------------------------------------------------
+    function renderWeightsSliders() {
+      const container = document.getElementById("weights-sliders-container");
+      if (!container) return;
+
+      const model = PLANETARY_MODELS[currentMode];
+      const defaults = model.defaultWeights;
+      const totalW = Object.values(activeWeights).reduce((a, b) => a + b, 0) || 1;
+
+      const items = [
+        { key: "temp", name: "Ambient Temperature (T2M)", unit: "°C", target: model.targets.temp, tol: model.tolerances.temp },
+        { key: "rain", name: "Zero Precipitation (Aridity)", unit: "mm/d", target: model.targets.rain, tol: model.tolerances.rain },
+        { key: "humidity", name: "Moisture Deficit (Dry Air)", unit: "%", target: model.targets.humidity, tol: model.tolerances.humidity },
+        { key: "sun", name: "Solar Insolation Incident", unit: "kWh/m²", target: model.targets.sun, tol: model.tolerances.sun },
+        { key: "slope", name: "Terrain Slope (ASTER DEM)", unit: "°", target: model.targets.slope, tol: model.tolerances.slope },
+        { key: "relief", name: "Local Topographical Relief", unit: "m", target: model.targets.relief, tol: model.tolerances.relief },
+      ];
+
+      container.innerHTML = items
+        .map((p) => {
+          const w = activeWeights[p.key];
+          const pct = Math.round((w / totalW) * 100);
+          return `
+            <div class="rounded-2xl p-4 backdrop-blur-xl" style="background: var(--color-surface); border: 1px solid var(--color-border);">
+              <div class="flex items-center justify-between mb-2">
+                <div>
+                  <div class="text-sm font-bold text-white">${p.name}</div>
+                  <div class="text-xs text-white/40 font-mono">(Target: ${p.target} ${p.unit}, σ: ${p.tol})</div>
+                </div>
+                <div class="text-right font-mono">
+                  <span class="text-sm font-bold" style="color: var(--color-accent);">${w.toFixed(2)}</span>
+                  <span class="text-[10px] text-white/40">(${pct}%)</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <input oninput="updateParamWeight('${p.key}', this.value)" type="range" min="0.0" max="1.0" step="0.05" value="${w}" class="flex-1 accent-cyan-400 cursor-pointer h-1.5 rounded-lg bg-white/10" />
+                <span class="text-[11px] font-mono text-white/30">Def: ${defaults[p.key].toFixed(2)}</span>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    function updateParamWeight(key, val) {
+      activeWeights[key] = parseFloat(val);
+      updateHUD();
+    }
+
+    function resetWeightsToDefaults() {
+      activeWeights = { ...PLANETARY_MODELS[currentMode].defaultWeights };
+      updateHUD();
+    }
+
+    // -----------------------------------------------------------
+    // 14. TELEMETRY TABLE MATRIX & CSV EXPORT
+    // -----------------------------------------------------------
+    function renderTelemetryTable() {
+      const tbody = document.getElementById("telemetry-table-body");
+      if (!tbody) return;
+
+      let list = evaluatedSites.filter((s) => {
+        if (tableRegionFilter !== "all" && s.region !== tableRegionFilter) return false;
+        if (tableSearchQuery.trim()) {
+          const q = tableSearchQuery.toLowerCase();
+          return s.name.toLowerCase().includes(q) || s.country.toLowerCase().includes(q) || s.category.toLowerCase().includes(q);
+        }
+        return true;
+      });
+
+      list.sort((a, b) => {
+        let vA = a[tableSortField], vB = b[tableSortField];
+        if (typeof vA === "string") {
+          return tableSortAsc ? vA.localeCompare(vB) : vB.localeCompare(vA);
+        }
+        return tableSortAsc ? vA - vB : vB - vA;
+      });
+
+      tbody.innerHTML = list
+        .map((s) => `
+          <tr onclick="openLocationModal(evaluatedSites.find(x => x.id === '${s.id}'))" class="hover:bg-white/[0.04] transition-colors cursor-pointer group">
+            <td class="py-3 px-3 font-bold text-white/50">${s.rank}</td>
+            <td class="py-3 px-3 font-sans font-bold text-white group-hover:text-cyan-300 transition-colors flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full shrink-0 ${s.region === "Pakistan" ? "bg-emerald-400" : "bg-cyan-400"}"></span>
+              <span>${s.name}</span>
+            </td>
+            <td class="py-3 px-3 font-sans text-white/60">${s.country}</td>
+            <td class="py-3 px-3 text-right font-bold" style="color: var(--color-accent);">${s.score?.toFixed(1)}%</td>
+            <td class="py-3 px-3 text-right text-white/75">${s.elevation.toFixed(0)}</td>
+            <td class="py-3 px-3 text-right text-white/75">${s.temp.toFixed(1)}</td>
+            <td class="py-3 px-3 text-right text-white/75">${s.rain.toFixed(2)}</td>
+            <td class="py-3 px-3 text-right text-white/75">${s.humidity.toFixed(0)}</td>
+            <td class="py-3 px-3 text-right text-white/75">${s.sun.toFixed(2)}</td>
+            <td class="py-3 px-3 text-right text-white/75">${s.slope.toFixed(1)}</td>
+            <td class="py-3 px-3 text-right text-white/75">${s.relief.toFixed(0)}</td>
+            <td class="py-3 px-3 text-center">
+              <button onclick="event.stopPropagation(); openLocationModal(evaluatedSites.find(x => x.id === '${s.id}'))" class="p-1 rounded bg-white/5 hover:bg-white/15 text-white/60 hover:text-white">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              </button>
+            </td>
+          </tr>
+        `)
+        .join("");
+    }
+
+    function sortTable(field) {
+      if (tableSortField === field) {
+        tableSortAsc = !tableSortAsc;
+      } else {
+        tableSortField = field;
+        tableSortAsc = true;
+      }
+      renderTelemetryTable();
+    }
+
+    function setTableRegionFilter(r) {
+      tableRegionFilter = r;
+      ["all", "pk", "intl"].forEach((id) => {
+        const btn = document.getElementById(`tbl-flt-${id}`);
+        if (btn) {
+          if ((id === "all" && r === "all") || (id === "pk" && r === "Pakistan") || (id === "intl" && r === "International")) {
+            btn.className = "px-3 py-1.5 rounded-lg font-bold bg-white/15 text-white";
+          } else {
+            btn.className = "px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white";
+          }
+        }
+      });
+      renderTelemetryTable();
+    }
+
+    function handleTableSearch(val) {
+      tableSearchQuery = val;
+      renderTelemetryTable();
+    }
+
+    function exportCatalogToCSV() {
+      const headers = [
+        "Rank", "Location", "Country", "Region", "Target_Affinity", "Category",
+        "PASM_Similarity_Score_Pct", "Latitude", "Longitude", "Elevation_m",
+        "Air_Temp_2m_C", "Precipitation_mm_day", "Relative_Humidity_Pct",
+        "Solar_Insolation_kWh_m2_day", "Slope_deg", "Relief_m",
+        "Planetary_Scientific_Rationale", "Scientific_Citation"
+      ];
+
+      const rows = evaluatedSites.map((s) => [
+        s.rank,
+        `"${s.name.replace(/"/g, '""')}"`,
+        `"${s.country.replace(/"/g, '""')}"`,
+        s.region,
+        s.targetAffinity,
+        s.category,
+        s.score?.toFixed(1),
+        s.lat,
+        s.lng,
+        s.elevation.toFixed(1),
+        s.temp.toFixed(2),
+        s.rain.toFixed(2),
+        s.humidity.toFixed(1),
+        s.sun.toFixed(4),
+        s.slope.toFixed(2),
+        s.relief.toFixed(1),
+        `"${s.scientificReason.replace(/"/g, '""')}"`,
+        `"${s.citation.replace(/"/g, '""')}"`
+      ]);
+
+      const csv = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+      const link = document.createElement("a");
+      link.setAttribute("href", encodeURI(csv));
+      link.setAttribute("download", `earth_analog_${currentMode}_catalog_nasa_spaceapps.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // -----------------------------------------------------------
+    // 15. GLOBE FILTERS & SEARCH
+    // -----------------------------------------------------------
+    function setGlobeRegionFilter(r) {
+      globeRegionFilter = r;
+      ["all", "pk", "intl"].forEach((id) => {
+        const btn = document.getElementById(`scope-btn-${id}`);
+        if (btn) {
+          if ((id === "all" && r === "all") || (id === "pk" && r === "pakistan") || (id === "intl" && r === "international")) {
+            btn.className = "px-3 py-1.5 rounded-lg font-bold bg-white/15 text-white transition-all";
+          } else {
+            btn.className = "px-3 py-1.5 rounded-lg font-medium text-white/60 hover:text-white transition-all";
+          }
+        }
+      });
+      renderGlobePins();
+    }
+
+    function handleGlobeSearch(val) {
+      globeSearchQuery = val;
+      renderGlobePins();
+    }
+
+    function handleGlobeElev(val) {
+      globeMinElev = Number(val);
+      document.getElementById("globe-elev-val").innerText = `${val} m`;
+      renderGlobePins();
+    }
+
+    // -----------------------------------------------------------
+    // 16. MULTI-PAGE TAB ROUTER & NAVIGATION CONTROLLER
+    // -----------------------------------------------------------
+    let currentPage = "overview";
+
+    const PAGE_MAP = {
+      "overview": "overview-page",
+      "hero": "overview-page",
+      "globe": "overview-page",
+      "pakistan": "pakistan-section",
+      "global": "global-section",
+      "compare": "compare-section",
+      "weights": "weights-section",
+      "data": "data-section",
+      "table": "data-section",
+      "science": "science-section",
+      "methodology": "science-section"
+    };
+
+    function switchPage(pageKey, smooth = true) {
+      const canonical = pageKey === "hero" ? "overview" : pageKey;
+      currentPage = canonical;
+
+      // Hide all page views
+      document.querySelectorAll(".page-view").forEach((el) => {
+        el.classList.add("hidden");
+      });
+
+      if (canonical === "overview" || canonical === "globe") {
+        const targetEl = document.getElementById("overview-page");
+        if (targetEl) {
+          targetEl.classList.remove("hidden");
+        }
+
+        history.replaceState(null, "", "#" + canonical);
+        updateNavTabsUI(canonical);
+
+        // Trigger 3D resizes & dynamic component updates for both
+        if (heroRenderer && heroCamera) {
+          const container = document.getElementById("hero-orbitals-container");
+          if (container) {
+            const nw = container.clientWidth || window.innerWidth;
+            const nh = container.clientHeight || window.innerHeight;
+            heroCamera.aspect = nw / nh;
+            heroCamera.updateProjectionMatrix();
+            heroRenderer.setSize(nw, nh);
+          }
+        }
+
+        if (globeRenderer && globeCamera) {
+          const container = document.getElementById("globe-3d-canvas-container");
+          if (container) {
+            const nw = container.clientWidth || 800;
+            const nh = container.clientHeight || 650;
+            globeCamera.aspect = nw / nh;
+            globeCamera.updateProjectionMatrix();
+            globeRenderer.setSize(nw, nh);
+          }
+        }
+
+        if (canonical === "globe") {
+          setTimeout(() => {
+            const globeEl = document.getElementById("globe-section");
+            if (globeEl) {
+              globeEl.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+            }
+          }, 60);
+        } else {
+          window.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" });
+        }
+        return;
+      }
+
+      // Show target page view for all other pages
+      const targetId = PAGE_MAP[canonical] || canonical;
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        targetEl.classList.remove("hidden");
+      }
+
+      window.scrollTo({ top: 0, behavior: "instant" });
+      history.replaceState(null, "", "#" + canonical);
+      updateNavTabsUI(canonical);
+
+      if (targetId === "compare-section") {
+        renderCompareSection();
+      }
+
+      if (targetId === "weights-section") {
+        renderWeightsSliders();
+      }
+
+      if (targetId === "data-section") {
+        renderTelemetryTable();
+      }
+    }
+
+    function updateNavTabsUI(activeKey) {
+      const tabs = ["overview", "globe", "pakistan", "global", "compare", "weights", "data", "science"];
+      tabs.forEach((tab) => {
+        // Desktop
+        const btn = document.getElementById("nav-tab-" + tab);
+        if (btn) {
+          if (tab === activeKey) {
+            btn.className = "nav-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-white transition-all";
+            btn.style.background = "var(--color-accent-soft)";
+            btn.style.border = "1px solid var(--color-border)";
+            btn.style.boxShadow = "0 0 16px -2px var(--color-accent-glow)";
+          } else {
+            btn.className = "nav-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium text-white/60 hover:text-white transition-all";
+            btn.style.background = "transparent";
+            btn.style.border = "1px solid transparent";
+            btn.style.boxShadow = "none";
+          }
+        }
+
+        // Mobile
+        const mBtn = document.getElementById("mob-nav-" + tab);
+        if (mBtn) {
+          if (tab === activeKey) {
+            mBtn.className = "mob-tab-btn px-2.5 py-1 whitespace-nowrap rounded font-bold text-white";
+            mBtn.style.background = "var(--color-accent-soft)";
+            mBtn.style.border = "1px solid var(--color-border)";
+          } else {
+            mBtn.className = "mob-tab-btn px-2.5 py-1 whitespace-nowrap rounded text-white/60 hover:text-white bg-white/5";
+            mBtn.style.background = "rgba(255,255,255,0.05)";
+            mBtn.style.border = "1px solid transparent";
+          }
+        }
+      });
+    }
+
+    // -----------------------------------------------------------
+    // 17. INITIALIZE ON DOM LOAD & HASH NAVIGATION
+    // -----------------------------------------------------------
+    window.addEventListener("DOMContentLoaded", () => {
+      initStarfield();
+      initHeroOrbitals();
+      init3DGlobe();
+      updateHUD();
+
+      const initialHash = window.location.hash.replace("#", "").toLowerCase();
+      if (initialHash && PAGE_MAP[initialHash]) {
+        switchPage(initialHash);
+      } else {
+        switchPage("overview");
+      }
+    });
+
+    window.addEventListener("hashchange", () => {
+      const h = window.location.hash.replace("#", "").toLowerCase();
+      if (h && PAGE_MAP[h] && h !== currentPage) {
+        switchPage(h);
+      }
+    });
+
+    // Scroll spy for overview page to toggle active nav state between Overview and 3D Globe
+    window.addEventListener("scroll", () => {
+      if (currentPage === "overview" || currentPage === "globe") {
+        const globeEl = document.getElementById("globe-section");
+        if (globeEl && !globeEl.classList.contains("hidden")) {
+          const rect = globeEl.getBoundingClientRect();
+          if (rect.top <= window.innerHeight * 0.45 && rect.bottom > 100) {
+            updateNavTabsUI("globe");
+          } else {
+            updateNavTabsUI("overview");
+          }
+        }
+      }
+    }, { passive: true });
+  </script>
+</body>
+
+</html>

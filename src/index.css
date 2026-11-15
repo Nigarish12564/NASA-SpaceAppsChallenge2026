@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-accent: #7fdfff;
+  --color-accent-rgb: 127, 223, 255;
+  --color-accent-soft: rgba(127, 223, 255, 0.14);
+  --color-accent-glow: rgba(127, 223, 255, 0.55);
+  --color-border: rgba(127, 223, 255, 0.25);
+  --color-surface: rgba(10, 16, 28, 0.76);
+  --color-surface-strong: rgba(7, 12, 22, 0.94);
+  --color-text-main: #e8eefc;
+  --color-text-muted: rgba(200, 222, 245, 0.65);
+  --color-grid: rgba(127, 223, 255, 0.08);
+  --color-bg-base: #05070d;
+}
+
+.theme-mars {
+  /* Iconic Martian primary red (kept!) */
+  --color-accent: #ff4732;
+  --color-accent-rgb: 255, 71, 50;
+  --color-accent-soft: rgba(255, 71, 50, 0.16);
+  --color-accent-glow: rgba(255, 71, 50, 0.55);
+
+  /* Refined Martian landscape color scheme: solar amber ochre, warm basalt, copper borders */
+  --color-secondary: #f59e0b;
+  --color-border: rgba(255, 95, 70, 0.32);
+  --color-surface: rgba(26, 16, 17, 0.85);
+  --color-surface-strong: rgba(18, 10, 11, 0.96);
+  --color-text-main: #feece8;
+  --color-text-muted: rgba(245, 195, 185, 0.7);
+  --color-grid: rgba(255, 95, 70, 0.08);
+  --color-bg-base: #090405;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* Themed scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #05070d;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(var(--color-accent-rgb), 0.35);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--color-accent-rgb), 0.6);
+}
+
+/* Utility to hide scrollbars for horizontal pills */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-in {
+  animation: modal-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pulse-halo {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.2;
+  }
+}
+
+.animate-pulse-halo {
+  animation: pulse-halo 2.5s ease-in-out infinite;
+}
