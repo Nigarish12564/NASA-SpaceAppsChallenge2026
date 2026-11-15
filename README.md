@@ -315,7 +315,7 @@ We developed Earth Analogue Explorer as a team for the NASA Space Apps Challenge
 
 ---
 
-## 🙏 Acknowledgements
+##  Acknowledgements
 
 We would like to thank:
 
