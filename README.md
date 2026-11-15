@@ -17,7 +17,7 @@
 ## 🚀 Live Web Version
 
 🌐 **Explore Earth Analogue Explorer:**  
-[Click here to open the live website](https://nigarish12564.github.io/NASA-SpaceAppsChallege/#overview)
+[Click here to open the live website](https://nigarish12564.github.io/NASA-SpaceAppsChallenge2026/#overview)
 
 **Earth Analogue Explorer** is an interactive web application developed for the NASA Space Apps Challenge.
 
